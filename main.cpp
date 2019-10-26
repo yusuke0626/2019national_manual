@@ -196,7 +196,7 @@ int main(void)
 		}
 
 
-		constexpr double kp = 21.0;
+		constexpr double kp = 5;
 		constexpr double ki = 0;//36.0 / 0.3;
 				
 
