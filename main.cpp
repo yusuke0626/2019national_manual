@@ -191,7 +191,7 @@ int main(void)
 
 
 		if(front == true){
-			rotation = rotation + 80 * std::sin(gyro_rad);
+			rotation = rotation + 80 * (1.05 / 1 + std::exp((-7.5 * gyro_rad) + 3)) - 0.04 ;
 			if(gyro.yaw < 1 && gyro.yaw > -1){
 				front = false;
 			}
