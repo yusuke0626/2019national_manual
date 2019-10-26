@@ -197,13 +197,12 @@ int main(void)
 
 
 		constexpr double kp = 21.0;
-		constexpr double ki = 36.0 / 0.3;
+		constexpr double ki = 0;//36.0 / 0.3;
 				
 
 		std::cout << kp * p_correct_rotation << std::endl;
 
-		rotation = rotation + kp*p_correct_rotation - ki*i_correct_rotation;
-		prev_rotation - rotation
+		rotation = rotation + kp*p_correct_rotation + ki*i_correct_rotation;
 		//double prev_correct = rotation;
  	       
 		if(rotation > 100){
