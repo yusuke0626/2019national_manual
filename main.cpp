@@ -117,6 +117,7 @@ int main(void)
 		gpioWrite(RUNLED,false);
 	}
 
+
 	RPGY521::GY521 gyro;
 	std::cout << "Calibration finished" << std::endl;
 	std::cout << "Start Main program" << std::endl;
@@ -160,9 +161,11 @@ int main(void)
 			}
 		} while (sleep_flag == true);
 		//-------------------------------undercarriage-------------------------------------//
+
 		double left_x = ds3.stick(LEFT_X);
 		double left_y = ds3.stick(LEFT_Y);
 		std::array<double, 4> wheel_velocity;
+		auto gyro_fixing = std::chrono::steady_clock::now();
 
 		if (ds3.button(SELECT) && ds3.press(LEFT))
 		{
@@ -174,19 +177,28 @@ int main(void)
 
 		double gyro_rad = gyro.yaw * M_PI / 180;
 		double rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.8;
+		static double gyro_pre_value = 0;
 
-		wheel_velocity[0] = -std::sin(M_PI/4 + gyro_rad) * left_x + std::cos(M_PI/4 + gyro_rad) * left_y + rotation;
-		wheel_velocity[1] = -std::cos(M_PI/4 + gyro_rad) * left_x + -std::sin(M_PI/4 + gyro_rad) * left_y + rotation;
-		wheel_velocity[2] = std::sin(M_PI/4 + gyro_rad) * left_x + -std::cos(M_PI/4 + gyro_rad) * left_y + rotation;
-		wheel_velocity[3] = std::cos(M_PI/4 + gyro_rad) * left_x + std::sin(M_PI/4 + gyro_rad) * left_y + rotation;
+		if(std::fabs(rotation) > 0){
+			gyro_pre_value = gyro.yaw;
+			//gyro_correct_wait = std::chrono::steady_clock::now();
+		}
+
+		int correct_rotation = gyro.yaw - gyro_pre_value;		
+
+		wheel_velocity[0] = -std::sin(M_PI/4 + gyro_rad) * left_x + std::cos(M_PI/4 + gyro_rad) * left_y + rotation - correct_rotation;
+		wheel_velocity[1] = -std::cos(M_PI/4 + gyro_rad) * left_x + -std::sin(M_PI/4 + gyro_rad) * left_y + rotation - correct_rotation;
+		wheel_velocity[2] = std::sin(M_PI/4 + gyro_rad) * left_x + -std::cos(M_PI/4 + gyro_rad) * left_y + rotation -  correct_rotation;
+		wheel_velocity[3] = std::cos(M_PI/4 + gyro_rad) * left_x + std::sin(M_PI/4 + gyro_rad) * left_y + rotation - correct_rotation;
 
 		static bool front = false;
 		static bool right = false;
 		static bool left  = false;
 
-		if(ds3.press(UP)){
+
+		/*if(ds3.press(UP)){
 			front == true ? front = false: front = true;
-		}//else if(ds3.press(RIGHT)){
+		}//else if(ds3.press(RIGHT)){*/
 
 
 
@@ -197,17 +209,14 @@ int main(void)
 			}
 		}
 
-
-				
-
-
+		//if(rotation == 0){
 
 		ms.send(BOTTOM_MDD, UNC_PORT , -wheel_velocity[1] * 0.8 * regulation + rotation * 1.2);
 		ms.send(DOWN_MDD,   UNC_PORT , -wheel_velocity[2] * 0.8 * regulation + rotation * 1.2);
 		ms.send(UP_MDD,     UNC_PORT  , -wheel_velocity[0] * 0.8 * regulation + rotation * 1.2);
 		ms.send(TOP_MDD,    UNC_PORT , -wheel_velocity[3] * 0.8 * regulation + rotation * 1.2);
 
-  
+
 		//-----------------------------hanger------------------------------------------------//
 
 		if (ds3.press(SQUARE) && !(ds3.button(SELECT)))
@@ -227,7 +236,7 @@ int main(void)
 			}
 		}
 
-		bool limit_uneffect = false;
+		static bool limit_uneffect = false;
 		if (ds3.button(SELECT) && ds3.press(CIRCLE))
 		{
 			((limit_uneffect = true) ? limit_uneffect = false : limit_uneffect = true);
@@ -264,7 +273,7 @@ int main(void)
 		double right_theta = std::atan2(right_x, right_y);
 		double right_distance = std::hypot(right_x, right_y);
 		//std::cout << right_distance << std::endl;
-		std::cout << right_distance << std::endl;
+//		std::cout << right_distance << std::endl;
 
 		int sent_y = 0;
 		int sent_z = 0;
@@ -394,6 +403,7 @@ int main(void)
 					towel_arm_status++;
 					sent_right = 0;
 					sent_left = 0;
+					box_permission = false;
 					break;
 				case 1:
 					if (limit_uneffect == false)
@@ -419,6 +429,7 @@ int main(void)
 					{
 						towel_arm_status = 0;
 						circle_on = false;
+						box_permission = false;
 					}
 					break;
 			}
@@ -443,9 +454,10 @@ int main(void)
 				box_wait_time = std::chrono::duration_cast<std::chrono::milliseconds>(box_now - box_start);
 				box_time = box_wait_time.count();
 				std::cout << box_time << std::endl;
+				z_bottom_limit == false ? sent_z = 180 : sent_z = 0;
 				if(box_time < 300){
 					y_back_limit == false ? sent_y = 180 : sent_y = 0;
-					z_bottom_limit == false ? sent_z = 180 : sent_z = 0;
+					//z_bottom_limit == false ? sent_z = 180 : sent_z = 0;
 				}else if(box_time < 600){
 					ms.send(TOP_MDD,SOLENOID_PORT,251);
 					//triangle_on = false;
@@ -455,24 +467,6 @@ int main(void)
 					triangle_on = false;
 				}
 
-
-				//box_start = std::chrono::steady_clock::now();
-				/*while(box_time < 500){
-				  box_now = std::chrono::steady_clock::now();
-				  box_wait_time = std::chrono::duration_cast<std::chrono::milliseconds>(box_now - box_start);
-				  box_time = box_wait_time.count();
-				  y_back_limit = gpioRead(Y_BACK_LIMIT);
-				  z_bottom_limit = gpioRead(Z_BOTTOM_LIMIT);
-				  y_back_limit == false ? ms.send(TOP_MDD,ARM_PORT,180) : ms.send(TOP_MDD,ARM_PORT,0);
-				  z_bottom_limit == false ? ms.send(UP_MDD,ARM_PORT,180) : ms.send(UP_MDD,ARM_PORT,0);
-				  }
-
-				  while(box_time < 1000 && box_time >= 500){
-				  box_now = std::chrono::steady_clock::now();
-				  box_wait_time = std::chrono::duration_cast<std::chrono::milliseconds>(box_now - box_start);
-				  box_time = box_wait_time.count();
-				  ms.send(TOP_MDD,SOLENOID_PORT,251);
-				  }*/
 			}
 		}else{
 			ms.send(TOP_MDD,SOLENOID_PORT,0);
@@ -489,4 +483,4 @@ int main(void)
 	gpioWrite(SLEEPLED,false);
 	ms.send(255,255,0);
 	return 0;
-}
+	}
