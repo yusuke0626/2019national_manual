@@ -186,7 +186,7 @@ int main(void)
 
 		if(ds3.press(UP)){
 			front == true ? front = false: front = true;
-		}else if(ds3.press(RIGHT)){
+		}//else if(ds3.press(RIGHT)){
 
 
 
@@ -264,6 +264,7 @@ int main(void)
 		double right_theta = std::atan2(right_x, right_y);
 		double right_distance = std::hypot(right_x, right_y);
 		//std::cout << right_distance << std::endl;
+		std::cout << right_distance << std::endl;
 
 		int sent_y = 0;
 		int sent_z = 0;
@@ -291,6 +292,10 @@ int main(void)
 			  y_back_limit == false ? sent_y = right_x * 1.8 : sent_y = 0;
 			  }*/
 			//(y_front_limit == true && right_x * coat_flag < 0)
+			//
+			sent_y = right_x * 1.8 * coat_select;
+			sent_z = right_y * 1.8;
+
 			if(y_back_limit  == true && right_x > 0){
 				sent_y = 0;
 			}else if(z_bottom_limit == true && right_y > 0){
@@ -299,11 +304,7 @@ int main(void)
 				sent_y = 0;
 			}else if(z_top_limit == true && right_y < 0){
 				sent_z = 0;
-			}else{
-				sent_y = right_x * 1.8 * coat_select;
-				sent_z = right_y * 1.8 * coat_select;
 			}
-
 			recover = false;
 			arm_status = 0;
 		}
