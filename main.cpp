@@ -194,14 +194,16 @@ int main(void)
 			//gyro_correct_wait = std::chrono::steady_clock::now();
 		}
 
-		if(ds3.press(UP)){
-			front == true ? front = false : front = true;
-		}else if(ds3.press(RIGHT)){
-			right == true ? right = false : right = true;
-		}else if(ds3.press(LEFT)){
-			left  == true ? left  = false : left  = true;
-		}else if(ds3.press(DOWN)){
-			back  == true ? back   = false : back  = true;
+		if(!ds3.button(SELECT)){
+			if(ds3.press(UP)){
+				front == true ? front = false : front = true;
+			}else if(ds3.press(RIGHT)){
+				right == true ? right = false : right = true;
+			}else if(ds3.press(LEFT)){
+				left  == true ? left  = false : left  = true;
+			}else if(ds3.press(DOWN)){
+				back  == true ? back  = false : back  = true;
+			}
 		}
 
 		if(front == true){
@@ -214,7 +216,7 @@ int main(void)
 			}
 		}else if(right == true){
 			rotation = rotation + 100 * (1.05 / (1 + std::exp((-7.5 * ((gyro.yaw + 90) / 180))) + 3)) - 0.03 ;
-			if(gyro.yaw < 90.5 && gyro.yaw > 89.5){
+			if(gyro.yaw < 91 && gyro.yaw > 89){
 				right = false;
 				correct_rock = false;
 			}else{
@@ -222,7 +224,7 @@ int main(void)
 			}
 		}else if(left == true){
 			rotation = rotation + 100 * (1.05 / (1 + std::exp((-7.5 * ((gyro.yaw - 90)/ 180))) + 3)) - 0.03 ;
-			if(gyro.yaw < -89.5 && gyro.yaw > -90.5){
+			if(gyro.yaw < -89 && gyro.yaw > -91){
 				left = false;
 				correct_rock = false;
 			}else{
