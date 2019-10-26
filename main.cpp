@@ -187,14 +187,13 @@ int main(void)
 		
 		static double integral  = 0 
 		static double differential = 0;
-		static double gyro_prev_value = 0;
+		static double dist_angle = 0;
 		
-		double diff_dest = gyro.yaw - gyro_prev_value;
-		integral = integral + diff;
-		now_angle = gyro.yaw;
-	       	differential = now_angle - prev_angle;
-		
-		prev_angle = now_angle;	
+		double diff_dest = dist_angle - now_angle;
+		integral = integral + diff_dest;
+	       	differential = diff_dest - prev_diff_dest;
+
+		prev_diff_dest = diff_dest;	
 		
 		if(std::fabs(user_rotation) > 0){
 			gyro_pre_value = now_angle;
