@@ -21,20 +21,25 @@ int main(void)
 	constexpr int SLEEPLED = 27;
 
 	//------MDD------//
-	constexpr int BOTTOM_MDD = 2;
-	constexpr int DOWN_MDD = 11;
-	constexpr int UP_MDD = 10;
-	constexpr int TOP_MDD = 16;
-	constexpr int TAPE_LED = 12;
+	constexpr int RIGHT_UP   = 10;
+	constexpr int RIGHT_DOWN =  2;
+	constexpr int LEFT_UP    = 11;
+	constexpr int LEFT_DOWN  = 16;
+	//constexpr int TAPE_LED = 12;
 
 	//-----PORT------//
-	constexpr int UNC_PORT = 2;
-	constexpr int SOLENOID_PORT = 4;
-	constexpr int ARM_PORT = 3;
+	constexpr int RIGHT_MOTOR = ;
+	constexpr int LEFT_MOTOR  = ;
+	constexpr int BACK_MOTOR  = ;
+	constexpr int RIGHT_TOWEL = ;
+	constexpr int LEFT_TOWEL  = ;
+	constexpr int HANGER      = ;
+	constexpr int ZARM        = ;
+	constexpr int YARM        = ;
 
-	constexpr int TAPELED = 84;
+	//constexpr int TAPELED = 84;
 
-	constexpr int RIGHT_TOP_LIMIT = 12;//12
+	constexpr int RIGHT_TOP_LIMIT = 12;
 	constexpr int RIGHT_BOTTOM_LIMIT = 16;//16
 	constexpr int LEFT_TOP_LIMIT = 11;//11
 	constexpr int LEFT_BOTTOM_LIMIT = 22;//22
@@ -188,54 +193,54 @@ int main(void)
 
 		int correct_rotation = gyro.yaw - gyro_pre_value;
 
-        if(!ds3.button(SELECT)){
+		if(!ds3.button(SELECT)){
 			if(ds3.press(UP)){
 				front == true ? front = false : front = true;
-                right = false;
-                left  = false;
-                back  = false;
+				right = false;
+				left  = false;
+				back  = false;
 			}else if(ds3.press(RIGHT)){
 				right == true ? right = false : right = true;
-                front = false;
-                left  = false;
-                back  = false;
+				front = false;
+				left  = false;
+				back  = false;
 
 			}else if(ds3.press(LEFT)){
 				left  == true ? left  = false : left  = true;
-                front = false;
-                right = false;
-                back  = false;
+				front = false;
+				right = false;
+				back  = false;
 
 			}else if(ds3.press(DOWN)){
 				back  == true ? back  = false : back  = true;
-                front = false;
-                right = false;
-                left  = false;
+				front = false;
+				right = false;
+				left  = false;
 			}
 		}
 
-        if(front == true){
-            rotation = rotation + std:sin(gyro.yaw / 180);
-            gyro.yaw < 1 && gyro.yaw > -1  ? front = false : front = true;
-        }else if(right == true){
-            rotation = rotation + std::sin((gyro.yaw + 90) / 180);
-            gyro.yaw < 91 && gyro.yaw > 89 ? right = false : right = true;
-        }else if(left == true){
-            rotation = rotation + std::sin((gyro.yaw - 90) / 180);
-            gyro.yaw < -89 && gyro.yaw > -91 ? left  = false : left = true;
-        }else if(right == true){
-            rotation = rotation + std::sin((gyro.yaw -180) / 180);
-            gyro.yaw < -179 || gyro.yaw > 179 ? back  = false : back = true;
-        }
+		if(front == true){
+			rotation = rotation + std::sin(gyro.yaw / 180);
+			gyro.yaw < 1 && gyro.yaw > -1  ? front = false : front = true;
+		}else if(right == true){
+			rotation = rotation + std::sin((gyro.yaw + 90) / 180);
+			gyro.yaw < 91 && gyro.yaw > 89 ? right = false : right = true;
+		}else if(left == true){
+			rotation = rotation + std::sin((gyro.yaw - 90) / 180);
+			gyro.yaw < -89 && gyro.yaw > -91 ? left  = false : left = true;
+		}else if(right == true){
+			rotation = rotation + std::sin((gyro.yaw -180) / 180);
+			gyro.yaw < -179 || gyro.yaw > 179 ? back  = false : back = true;
+		}
 
-        if(std::fabs(rotation) > 0){
+		if(std::fabs(rotation) > 0){
 			gyro_pre_value = gyro.yaw;
 			//gyro_correct_wait = std::chrono::steady_clock::now();
 		}
 
-        rotation = rotation + correct_rotation;
+		rotation = rotation + correct_rotation;
 
-	    std::cout << rotation << std::endl;
+		std::cout << rotation << std::endl;
 		std::cout << correct_rotation << std::endl;
 
 		wheel_velocity[0] = std::cos(gyro_rad) + std::sin(gyro_rad) -rotation;
@@ -303,7 +308,6 @@ int main(void)
 		double right_distance = std::hypot(right_x, right_y);
 		//std::cout << right_distance << std::endl;
 		//		std::cout << right_distance << std::endl;
-
 		int sent_y = 0;
 		int sent_z = 0;
 
