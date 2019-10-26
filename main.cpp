@@ -166,7 +166,7 @@ int main(void)
 
 		double left_x = ds3.stick(LEFT_X);
 		double left_y = ds3.stick(LEFT_Y);
-		std::array<double, 4> wheel_velocity;
+		std::array<double, 3> wheel_velocity;
 		//auto gyro_fixing = std::chrono::steady_clock::now();
 
 		if (ds3.button(SELECT) && ds3.press(LEFT))
@@ -185,16 +185,10 @@ int main(void)
 		static bool right = false;
 		static bool left  = false;
 		static bool back  = false;
-		static bool correct_rock = false;
 
 		int correct_rotation = gyro.yaw - gyro_pre_value;
 
-		if(std::fabs(rotation) > 0 || correct_rock == false){
-			gyro_pre_value = gyro.yaw;
-			//gyro_correct_wait = std::chrono::steady_clock::now();
-		}
-
-		if(!ds3.button(SELECT)){
+        if(!ds3.button(SELECT)){
 			if(ds3.press(UP)){
 				front == true ? front = false : front = true;
                 right = false;
@@ -220,59 +214,37 @@ int main(void)
 			}
 		}
 
-		if(front == true){
-			rotation = rotation + 50 * (gyro.yaw / 180);
-			if(gyro.yaw < 1 && gyro.yaw > -1){
-				front = false;
-				correct_rock = false;
-			}else{
-				correct_rock = true;
-			}
-		}else if(right == true){
-			rotation = rotation + 50 * ((gyro.yaw - 90)/ 180);
-			if(gyro.yaw < 91 && gyro.yaw > 89){
-				right = false;
-				correct_rock = false;
-			}else{
-				correct_rock = true;
-			}
-		}else if(left == true){
-			rotation = rotation + 50 * ((gyro.yaw + 90)/ 180);
-			if(gyro.yaw < -89 && gyro.yaw > -91){
-				left = false;
-				correct_rock = false;
-			}else{
-				correct_rock = true;
-			}
-		}else if(back == true){
-			rotation = rotation + 50 * ((gyro.yaw + 180)/ 180);
-			if(gyro.yaw < 1 && gyro.yaw > -1){
-				back = false;
-				correct_rock = false;
-			}else{
-				correct_rock = true;
-			}
-		}else{
-            correct_rock = false;
-            front = false;
-            right = false;
-            left  = false;
-            back  = false;
+        if(front == true){
+            rotation = rotation + std:sin(gyro.yaw / 180);
+            gyro.yaw < 1 && gyro.yaw > -1  ? front = false : front = true;
+        }else if(right == true){
+            rotation = rotation + std::sin((gyro.yaw + 90) / 180);
+            gyro.yaw < 91 && gyro.yaw > 89 ? right = false : right = true;
+        }else if(left == true){
+            rotation = rotation + std::sin((gyro.yaw - 90) / 180);
+            gyro.yaw < -89 && gyro.yaw > -91 ? left  = false : left = true;
+        }else if(right == true){
+            rotation = rotation + std::sin((gyro.yaw -180) / 180);
+            gyro.yaw < -179 || gyro.yaw > 179 ? back  = false : back = true;
         }
 
-		std::cout << rotation << std::endl;
+        if(std::fabs(rotation) > 0){
+			gyro_pre_value = gyro.yaw;
+			//gyro_correct_wait = std::chrono::steady_clock::now();
+		}
+
+        rotation = rotation + correct_rotation;
+
+	    std::cout << rotation << std::endl;
 		std::cout << correct_rotation << std::endl;
 
-		wheel_velocity[0] = -std::sin(M_PI/4 + gyro_rad) * left_x + std::cos(M_PI/4 + gyro_rad) * left_y  -rotation - correct_rotation;
-		wheel_velocity[1] = -std::cos(M_PI/4 + gyro_rad) * left_x + -std::sin(M_PI/4 + gyro_rad) * left_y - rotation - correct_rotation;
-		wheel_velocity[2] = std::sin(M_PI/4 + gyro_rad) * left_x + -std::cos(M_PI/4 + gyro_rad) * left_y - rotation -  correct_rotation;
-		wheel_velocity[3] = std::cos(M_PI/4 + gyro_rad) * left_x + std::sin(M_PI/4 + gyro_rad) * left_y - rotation - correct_rotation;
+		wheel_velocity[0] = std::cos(gyro_rad) + std::sin(gyro_rad) -rotation;
+		wheel_velocity[1] = std::cos(gyro_rad + M_PI * 2/3) + std::sin(gyro_rad + M_PI * 2/3) -rotation;
+		wheel_velocity[2] = std::cos(gyro_rad - M_PI * 2/3) + std::sin(gyro_rad - M_PI * 2/3) -rotation;
 
 		ms.send(BOTTOM_MDD, UNC_PORT , -wheel_velocity[1] * 0.8 * regulation);
 		ms.send(DOWN_MDD,   UNC_PORT , -wheel_velocity[2] * 0.8 * regulation);
 		ms.send(UP_MDD,     UNC_PORT , -wheel_velocity[0] * 0.8 * regulation);
-		ms.send(TOP_MDD,    UNC_PORT , -wheel_velocity[3] * 0.8 * regulation);
-
 
 		//-----------------------------hanger------------------------------------------------//
 
