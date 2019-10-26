@@ -445,8 +445,8 @@ int main(void)
 		}
 
 
-		ms.send(10,TOWEL,sent_right);
-		ms.send(2, TOWEL,sent_left);
+		ms.send(10,TOWEL,-sent_right);
+		ms.send(2, TOWEL,-sent_left);
 
 		//-------------------------------box-------------------------------/
 		static bool triangle_on = false;
