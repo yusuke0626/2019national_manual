@@ -172,6 +172,7 @@ int main(void)
 		double left_x = ds3.stick(LEFT_X);
 		double left_y = ds3.stick(LEFT_Y);
 		std::array<double, 3> wheel_velocity;
+		//auto gyro_fixing = std::chrono::steady_clock::now();
 
 		if (ds3.button(SELECT) && ds3.press(LEFT))
 		{
@@ -183,34 +184,67 @@ int main(void)
 
 		double gyro_rad = gyro.yaw * M_PI / 180;
 		double rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.8;
-		
 		static double gyro_pre_value = 0;
+
+		/*static bool front = false;
+		static bool right = false;
+		static bool left  = false;
+		static bool back  = false;*/
+		constexpr double kp = 10.0;
+		constexpr double ki = 0;		
 		double p_correct_rotation = gyro.yaw - gyro_pre_value;
 		static double i_correct_rotation = 0;
-		//static double d_correct_rotation = 0;
 		i_correct_rotation = i_correct_rotation + (gyro.yaw - gyro_pre_value);
-		
+
+		/*if(!ds3.button(SELECT)){
+			if(ds3.press(UP)){
+				front == true ? front = false : front = true;
+				right = false;
+				left  = false;
+				back  = false;
+			}else if(ds3.press(RIGHT)){
+				right == true ? right = false : right = true;
+				front = false;
+				left  = false;
+				back  = false;
+
+			}else if(ds3.press(LEFT)){
+				left  == true ? left  = false : left  = true;
+				front = false;
+				right = false;
+				back  = false;
+
+			}else if(ds3.press(DOWN)){
+				back  == true ? back  = false : back  = true;
+				front = false;
+				right = false;
+				left  = false;
+			}
+		}
+
+		if(front == true){
+			rotation = rotation + std::sin(gyro.yaw / 180);
+			gyro.yaw < 1 && gyro.yaw > -1  ? front = false : front = true;
+		}else if(right == true){
+			rotation = rotation + std::sin((gyro.yaw + 90) / 180);
+			gyro.yaw < 91 && gyro.yaw > 89 ? right = false : right = true;
+		}else if(left == true){
+			rotation = rotation + std::sin((gyro.yaw - 90) / 180);
+			gyro.yaw < -89 && gyro.yaw > -91 ? left  = false : left = true;
+		}else if(right == true){
+			rotation = rotation + std::sin((gyro.yaw -180) / 180);
+			gyro.yaw < -179 || gyro.yaw > 179 ? back  = false : back = true;
+		}*/
+
 		if(std::fabs(rotation) > 0){
 			gyro_pre_value = gyro.yaw;
 			i_correct_rotation = 0;
+			//gyro_correct_wait = std::chrono::steady_clock::now();
 		}
-
-
-		constexpr double kp = 21.0;
-		constexpr double ki = 36.0 / 0.3;
-				
 
 		std::cout << kp * p_correct_rotation << std::endl;
 
-		rotation = rotation + kp*p_correct_rotation - ki*i_correct_rotation;
-		prev_rotation - rotation
-		//double prev_correct = rotation;
- 	       
-		if(rotation > 100){
-			rotation = 100;
-		}else if(rotation < -100){
-			rotation = -100;
-		}	//+ i_correct_rotation;
+		rotation = rotation + kp*p_correct_rotation + ki*i_correct_rotation; //+ i_correct_rotation;
 
 		/*if(rotation < -250){
 			rotation = -250;
@@ -227,19 +261,19 @@ int main(void)
 		if(wheel_velocity[1] < -250){
 			wheel_velocity[1] = -250;
 		}else if(wheel_velocity[1] > 250){
-			wheel_velocity[1] = 250;
+			wheel_velocity[1] = 250
 		}
 		
 		if(wheel_velocity[2] < -250){
 			wheel_velocity[2] = -250;
 		}else if(wheel_velocity[2] > 250){
-			wheel_velocity[2] = 250;
+			wheel_velocity[2] = 250
 		}
 		
 		if(wheel_velocity[0] < -250){
 			wheel_velocity[0] = -250;
 		}else if(wheel_velocity[0] > 250){
-			wheel_velocity[0] = 250;
+			wheel_velocity[0] = 250
 		}
 
 		ms.send(10, MOTOR, -wheel_velocity[1] * 0.8 * regulation);

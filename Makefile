@@ -11,4 +11,4 @@ RasPiDS3.o: ./RasPiDS3/RasPiDS3.cpp
 main.o: main.cpp
 	g++ -Wall -c main.cpp -lpigpio -std=c++17 -pthread -lrt
 clean: 
-	rm -f *.o Do
+	rm -f *.o Main
