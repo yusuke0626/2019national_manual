@@ -90,6 +90,7 @@ int main(void)
 	int tape_led_mode = 0;
 	int arm_status = 0;
 	int towel_arm_status = 0;
+	int box_time = 0;
 
 	std::chrono::steady_clock::time_point z_fall_start, z_fall_now, y_pull_start,y_pull_now,box_start,box_now;
 	std::chrono::milliseconds z_fall_time,y_pull_time,box_wait_time;
@@ -172,18 +173,41 @@ int main(void)
 		ds3.button(R1) ? regulation = 0.5 : regulation = 1;
 
 		double gyro_rad = gyro.yaw * M_PI / 180;
-		double rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.3;
+		double rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.8;
 
-		wheel_velocity[0] = (-std::sin(M_PI / 4 + gyro_rad) * left_x + std::cos(M_PI / 4 + gyro_rad) * left_y) * regulation + rotation;
-		wheel_velocity[1] = (-std::cos(M_PI / 4 + gyro_rad) * left_x + std::sin(M_PI / 4 + gyro_rad) * left_y) * regulation + rotation;
+		wheel_velocity[0] = -std::sin(M_PI/4 + gyro_rad) * left_x + std::cos(M_PI/4 + gyro_rad) * left_y + rotation;
+		wheel_velocity[1] = -std::cos(M_PI/4 + gyro_rad) * left_x + -std::sin(M_PI/4 + gyro_rad) * left_y + rotation;
+		wheel_velocity[2] = std::sin(M_PI/4 + gyro_rad) * left_x + -std::cos(M_PI/4 + gyro_rad) * left_y + rotation;
+		wheel_velocity[3] = std::cos(M_PI/4 + gyro_rad) * left_x + std::sin(M_PI/4 + gyro_rad) * left_y + rotation;
 
-		wheel_velocity[2] = -wheel_velocity[0] + rotation;
-		wheel_velocity[3] = -wheel_velocity[1] + rotation;
+		static bool front = false;
+		static bool right = false;
+		static bool left  = false;
 
-		ms.send(BOTTOM_MDD, UNC_PORT, wheel_velocity[1] * 1.6 * regulation + rotation);
-		ms.send(DOWN_MDD, UNC_PORT, wheel_velocity[2] * 1.6 * regulation + rotation);
-		ms.send(UP_MDD, UNC_PORT, wheel_velocity[0] * 1.6 * regulation + rotation);
-		ms.send(TOP_MDD, UNC_PORT, wheel_velocity[3] * 1.6 * regulation + rotation);
+		if(ds3.press(UP)){
+			front == true ? front = false: front = true;
+		}else if(ds3.press(RIGHT)){
+
+
+
+		if(front == true){
+			rotation = rotation + 80 * std::sin(gyro_rad);
+			if(gyro.yaw < 1 && gyro.yaw > -1){
+				front = false;
+			}
+		}
+
+
+				
+
+
+
+		ms.send(BOTTOM_MDD, UNC_PORT , -wheel_velocity[1] * 0.8 * regulation + rotation * 1.2);
+		ms.send(DOWN_MDD,   UNC_PORT , -wheel_velocity[2] * 0.8 * regulation + rotation * 1.2);
+		ms.send(UP_MDD,     UNC_PORT  , -wheel_velocity[0] * 0.8 * regulation + rotation * 1.2);
+		ms.send(TOP_MDD,    UNC_PORT , -wheel_velocity[3] * 0.8 * regulation + rotation * 1.2);
+
+  
 		//-----------------------------hanger------------------------------------------------//
 
 		if (ds3.press(SQUARE) && !(ds3.button(SELECT)))
@@ -276,8 +300,8 @@ int main(void)
 			}else if(z_top_limit == true && right_y < 0){
 				sent_z = 0;
 			}else{
-				sent_y = right_x * 1.8;
-				sent_z = right_y * 1.8;
+				sent_y = right_x * 1.8 * coat_select;
+				sent_z = right_y * 1.8 * coat_select;
 			}
 
 			recover = false;
@@ -405,37 +429,52 @@ int main(void)
 
 		//-------------------------------box-------------------------------/
 		static bool triangle_on = false;
-		int box_time = 0;
 
 		if (ds3.press(TRIANGLE) && !(ds3.button(SELECT))){
 			triangle_on = true;
+			box_start = std::chrono::steady_clock::now();
 			//box_start = std::chrono::steady_clock::now();
 		}
-		std::cout << y_back_limit << std::endl;
 
 		if(triangle_on == true){
 			if(box_permission == true){
-				box_start = std::chrono::steady_clock::now();
-				while(box_time < 500){
-					box_now = std::chrono::steady_clock::now();
-					box_wait_time = std::chrono::duration_cast<std::chrono::milliseconds>(box_now - box_start);
-					box_time = box_wait_time.count();
-					y_back_limit = gpioRead(Y_BACK_LIMIT);
-					z_bottom_limit = gpioRead(Z_BOTTOM_LIMIT);
-					y_back_limit == false ? ms.send(TOP_MDD,ARM_PORT,180) : ms.send(TOP_MDD,ARM_PORT,0);
-					z_bottom_limit == false ? ms.send(UP_MDD,ARM_PORT,180) : ms.send(UP_MDD,ARM_PORT,0);
-				}
-
-				while(box_time < 1000 && box_time >= 500){
-					box_now = std::chrono::steady_clock::now();
-					box_wait_time = std::chrono::duration_cast<std::chrono::milliseconds>(box_now - box_start);
-					box_time = box_wait_time.count();
+				box_now = std::chrono::steady_clock::now();
+				box_wait_time = std::chrono::duration_cast<std::chrono::milliseconds>(box_now - box_start);
+				box_time = box_wait_time.count();
+				std::cout << box_time << std::endl;
+				if(box_time < 300){
+					y_back_limit == false ? sent_y = 180 : sent_y = 0;
+					z_bottom_limit == false ? sent_z = 180 : sent_z = 0;
+				}else if(box_time < 600){
 					ms.send(TOP_MDD,SOLENOID_PORT,251);
-				}
-			}
-			triangle_on = false;
-			ms.send(TOP_MDD,SOLENOID_PORT,0);
+					//triangle_on = false;
 
+				}else{
+					//ms.send(TOP_MDD,SOLENOID_PORT,0);
+					triangle_on = false;
+				}
+
+
+				//box_start = std::chrono::steady_clock::now();
+				/*while(box_time < 500){
+				  box_now = std::chrono::steady_clock::now();
+				  box_wait_time = std::chrono::duration_cast<std::chrono::milliseconds>(box_now - box_start);
+				  box_time = box_wait_time.count();
+				  y_back_limit = gpioRead(Y_BACK_LIMIT);
+				  z_bottom_limit = gpioRead(Z_BOTTOM_LIMIT);
+				  y_back_limit == false ? ms.send(TOP_MDD,ARM_PORT,180) : ms.send(TOP_MDD,ARM_PORT,0);
+				  z_bottom_limit == false ? ms.send(UP_MDD,ARM_PORT,180) : ms.send(UP_MDD,ARM_PORT,0);
+				  }
+
+				  while(box_time < 1000 && box_time >= 500){
+				  box_now = std::chrono::steady_clock::now();
+				  box_wait_time = std::chrono::duration_cast<std::chrono::milliseconds>(box_now - box_start);
+				  box_time = box_wait_time.count();
+				  ms.send(TOP_MDD,SOLENOID_PORT,251);
+				  }*/
+			}
+		}else{
+			ms.send(TOP_MDD,SOLENOID_PORT,0);
 		}
 
 
