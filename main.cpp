@@ -186,10 +186,10 @@ int main(void)
 		static bool left  = false;
 		static bool back  = false;
 		static bool correct_rock = false;
-		
+
 		int correct_rotation = gyro.yaw - gyro_pre_value;
 
-		if(std::fabs(rotation) > 0 && correct_rotation == false){
+		if(std::fabs(rotation) > 0 || correct_rock == false){
 			gyro_pre_value = gyro.yaw;
 			//gyro_correct_wait = std::chrono::steady_clock::now();
 		}
@@ -201,11 +201,11 @@ int main(void)
 		}else if(ds3.press(LEFT)){
 			left  == true ? left  = false : left  = true;
 		}else if(ds3.press(DOWN)){
-			back  = true ? back   = false : back  = true;
+			back  == true ? back   = false : back  = true;
 		}
 
 		if(front == true){
-			rotation = rotation + 20 * (1.05 / 1 + std::exp((-7.5 * (gyro.yaw / 180)) + 3)) - 0.03 ;
+			rotation = rotation + 100 * (1.05 / (1 + std::exp((-7.5 * (gyro.yaw / 180)) + 3))) - 0.03 ;
 			if(gyro.yaw < 1 && gyro.yaw > -1){
 				front = false;
 				correct_rock = false;
@@ -213,7 +213,7 @@ int main(void)
 				correct_rock = true;
 			}
 		}else if(right == true){
-			rotation = rotation + 20 * (1.05 / 1 + std::exp((-7.5 * ((gyro.yaw - 90) / 180)) + 3)) - 0.03 ;
+			rotation = rotation + 100 * (1.05 / (1 + std::exp((-7.5 * ((gyro.yaw + 90) / 180))) + 3)) - 0.03 ;
 			if(gyro.yaw < 90.5 && gyro.yaw > 89.5){
 				right = false;
 				correct_rock = false;
@@ -221,7 +221,7 @@ int main(void)
 				correct_rock = true;
 			}
 		}else if(left == true){
-			rotation = rotation + 20 * (1.05 / 1 + std::exp((-7.5 * ((gyro.yaw + 90)/ 180)) + 3)) - 0.03 ;
+			rotation = rotation + 100 * (1.05 / (1 + std::exp((-7.5 * ((gyro.yaw - 90)/ 180))) + 3)) - 0.03 ;
 			if(gyro.yaw < -89.5 && gyro.yaw > -90.5){
 				left = false;
 				correct_rock = false;
@@ -229,19 +229,22 @@ int main(void)
 				correct_rock = true;
 			}
 		}else if(back == true){
-			rotation = rotation + 20 * (1.05 / 1 + std::exp((-7.5 * ((gyro.yaw - 180)/ 180)) + 3)) - 0.03 ;
+			rotation = rotation + 100 * (1.05 / (1 + std::exp((-7.5 * ((gyro.yaw - 180)/ 180))) + 3)) - 0.03 ;
 			if(gyro.yaw < 1 && gyro.yaw > -1){
 				back = false;
-                correct_rock = false;
+				correct_rock = false;
 			}else{
-                correct_rock = true;
+				correct_rock = true;
 			}
 		}
 
-		wheel_velocity[0] = -std::sin(M_PI/4 + gyro_rad) * left_x + std::cos(M_PI/4 + gyro_rad) * left_y + rotation - correct_rotation;
-		wheel_velocity[1] = -std::cos(M_PI/4 + gyro_rad) * left_x + -std::sin(M_PI/4 + gyro_rad) * left_y + rotation - correct_rotation;
-		wheel_velocity[2] = std::sin(M_PI/4 + gyro_rad) * left_x + -std::cos(M_PI/4 + gyro_rad) * left_y + rotation -  correct_rotation;
-		wheel_velocity[3] = std::cos(M_PI/4 + gyro_rad) * left_x + std::sin(M_PI/4 + gyro_rad) * left_y + rotation - correct_rotation;
+		std::cout << rotation << std::endl;
+		std::cout << correct_rotation << std::endl;
+
+		wheel_velocity[0] = -std::sin(M_PI/4 + gyro_rad) * left_x + std::cos(M_PI/4 + gyro_rad) * left_y  -rotation - correct_rotation;
+		wheel_velocity[1] = -std::cos(M_PI/4 + gyro_rad) * left_x + -std::sin(M_PI/4 + gyro_rad) * left_y - rotation - correct_rotation;
+		wheel_velocity[2] = std::sin(M_PI/4 + gyro_rad) * left_x + -std::cos(M_PI/4 + gyro_rad) * left_y - rotation -  correct_rotation;
+		wheel_velocity[3] = std::cos(M_PI/4 + gyro_rad) * left_x + std::sin(M_PI/4 + gyro_rad) * left_y - rotation - correct_rotation;
 
 		ms.send(BOTTOM_MDD, UNC_PORT , -wheel_velocity[1] * 0.8 * regulation);
 		ms.send(DOWN_MDD,   UNC_PORT , -wheel_velocity[2] * 0.8 * regulation);
@@ -305,7 +308,7 @@ int main(void)
 		double right_theta = std::atan2(right_x, right_y);
 		double right_distance = std::hypot(right_x, right_y);
 		//std::cout << right_distance << std::endl;
-//		std::cout << right_distance << std::endl;
+		//		std::cout << right_distance << std::endl;
 
 		int sent_y = 0;
 		int sent_z = 0;
