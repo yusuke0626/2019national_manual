@@ -34,7 +34,7 @@ int main(void)
 	constexpr int RIGHT_TOWEL = 3;
 	constexpr int LEFT_TOWEL  = 4;
 	constexpr int HANGER_RAISE= 2;
-    constexpr int HANGER_HOLD = 2;
+	constexpr int HANGER_HOLD = 2;
 	constexpr int ZARM        = 4;
 	constexpr int YARM        = 3;
 
@@ -82,10 +82,10 @@ int main(void)
 	gpioSetMode(LEFT_BOTTOM_LIMIT, PI_INPUT);
 	gpioSetPullUpDown(LEFT_BOTTOM_LIMIT, PI_PUD_UP);
 
-	gpioSetMode(Y_FRONT_LIMIT, PI_INPUT);
-	gpioSetPullUpDown(Y_FRONT_LIMIT, PI_PUD_UP);
-	gpioSetMode(Y_BACK_LIMIT, PI_INPUT);
-	gpioSetPullUpDown(Y_BACK_LIMIT, PI_PUD_UP);
+	//gpioSetMode(Y_FRONT_LIMIT, PI_INPUT);
+	//gpioSetPullUpDown(Y_FRONT_LIMIT, PI_PUD_UP);
+	//gpioSetMode(Y_BACK_LIMIT, PI_INPUT);
+	//gpioSetPullUpDown(Y_BACK_LIMIT, PI_PUD_UP);
 	gpioSetMode(Z_TOP_LIMIT, PI_INPUT);
 	gpioSetPullUpDown(Z_TOP_LIMIT, PI_PUD_UP);
 	gpioSetMode(Z_BOTTOM_LIMIT, PI_INPUT);
@@ -249,7 +249,7 @@ int main(void)
 		wheel_velocity[2] = std::cos(gyro_rad - M_PI * 2/3) + std::sin(gyro_rad - M_PI * 2/3) -rotation;
 
 		ms.send(LEFT_DOWN, LEFT_MOTOR, -wheel_velocity[1] * 0.8 * regulation);
-		ms.send(LEFT_UP,   LEFT_UP,    -wheel_velocity[2] * 0.8 * regulation);
+		ms.send(LEFT_UP,   RIGHT_MOTOR,    -wheel_velocity[2] * 0.8 * regulation);
 		ms.send(LEFT_DOWN, BACK_MOTOR, -wheel_velocity[0] * 0.8 * regulation);
 
 		//-----------------------------hanger------------------------------------------------//
@@ -266,7 +266,7 @@ int main(void)
 			}
 			else
 			{
-				ms.send(UP_MDD, SOLENOID_PORT, 0);
+				ms.send(RIGHT_UP, HANGER_RAISE, 0);
 				tape_led_mode = 7;
 			}
 		}
@@ -285,7 +285,7 @@ int main(void)
 		bool right_bottom_limit = false;
 		bool left_top_limit = false;
 		bool left_bottom_limit = false;
-        int potentiometer = ms.send(RIGHT_DOWN,4,40);
+		int potentiometer = ms.send(LEFT_DOWN,4,40);
 
 		static bool recover = false;
 
@@ -389,10 +389,10 @@ int main(void)
 		}
 
 		if(ds3.button(L1) && ds3.button(CIRCLE)){
-			ms.send(DOWN_MDD,SOLENOID_PORT,251);
-			ms.send(DOWN_MDD,SOLENOID_PORT,252);
+			ms.send(LEFT_UP,HANGER_HOLD,251);
+			ms.send(LEFT_UP,HANGER_HOLD,252);
 		}else{
-			ms.send(DOWN_MDD,SOLENOID_PORT,0);
+			ms.send(LEFT_UP,HANGER_HOLD,0);
 		}
 
 		//std::cout << sent_y << sent_z << std::endl;
@@ -449,8 +449,8 @@ int main(void)
 		}
 
 
-		ms.send(DOWN_MDD,ARM_PORT,sent_right);
-		ms.send(BOTTOM_MDD,ARM_PORT,sent_left);
+		ms.send(RIGHT_DOWN,RIGHT_TOWEL,sent_right);
+		ms.send(RIGHT_UP,LEFT_TOWEL,sent_left);
 
 		//-------------------------------box-------------------------------/
 		static bool triangle_on = false;
@@ -461,7 +461,7 @@ int main(void)
 			//box_start = std::chrono::steady_clock::now();
 		}
 
-		if(triangle_on == true){
+		/*if(triangle_on == true){
 			towel_arm_status = 1;
 			if(box_permission == true || final_mode == true){
 				box_now = std::chrono::steady_clock::now();
@@ -470,7 +470,7 @@ int main(void)
 				std::cout << box_time << std::endl;
 				z_bottom_limit == false ? sent_z = 180 : sent_z = 0;
 				if(box_time < 300){
-					potentiometer < 50 ? sent_y = 180 : sent_y = 0;
+					potentiometer < 50 ? sent_y = 180 : sent_y 
 					//z_bottom_limit == false ? sent_z = 180 : sent_z = 0;
 				}else if(box_time < 600){
 					ms.send(TOP_MDD,SOLENOID_PORT,251);
@@ -485,10 +485,10 @@ int main(void)
 				ms.send(TOP_MDD,SOLENOID_PORT,251);
 			}
 		}else{
-			ms.send(TOP_MDD,SOLENOID_PORT,0);
-		}
-		ms.send(TOP_MDD, ARM_PORT, sent_y * regulation);
-		ms.send(UP_MDD, ARM_PORT,  sent_z * regulation);
+			ms.send(,SOLENOID_PORT,0);
+		}*/
+		ms.send(RIGHT_UP, YARM, sent_y * regulation);
+		ms.send(RIGHT_DOWN, ZARM,  sent_z * regulation);
 	}
 	gpioWrite(RUNLED,false);
 	gpioWrite(SLEEPLED,false);
