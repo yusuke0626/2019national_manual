@@ -183,26 +183,28 @@ int main(void)
 
 		double now_angle = gyro.yaw;
 		double gyro_rad = now_angle * M_PI / 180;
-		
 		double user_rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.8;
 		
-		static double integral  = 0 differential = 0;
-		static double gyro_pre_value = 0;
-		double diff_angle = gyro.yaw - gyro_pre_value;
+		static double integral  = 0 
+		static double differential = 0;
+		static double gyro_prev_value = 0;
 		
+		double diff_dest = gyro.yaw - gyro_prev_value;
 		integral = integral + diff;
 		now_angle = gyro.yaw;
 	       	differential = now_angle - prev_angle;
+		
 		prev_angle = now_angle;	
 		
 		if(std::fabs(user_rotation) > 0){
-			gyro_pre_value = gyro.yaw;
-			i_correct_rotation = 0;
+			gyro_pre_value = now_angle;
+			integral = 0;
 		}
 
 
 		constexpr double kp = 21.0;
 		constexpr double ki = 36.0 / 0.3;
+		constexpr double kd = 0.075 * 30.0 * 0.3;
 				
 
 		std::cout << kp * p_correct_rotation << std::endl;
