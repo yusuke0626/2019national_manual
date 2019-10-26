@@ -181,16 +181,19 @@ int main(void)
 
 		ds3.button(R1) ? regulation = 0.5 : regulation = 1;
 
-		double gyro_rad = gyro.yaw * M_PI / 180;
+		double now_angle = gyro.yaw;
+		double gyro_rad = now_angle * M_PI / 180;
 		
 		double user_rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.8;
 		
 		static double integral  = 0 differential = 0;
 		static double gyro_pre_value = 0;
 		double diff_angle = gyro.yaw - gyro_pre_value;
-		static double integral = integral + diff;
-		static
-		d_correct_rotation = 
+		
+		integral = integral + diff;
+		now_angle = gyro.yaw;
+	       	differential = now_angle - prev_angle;
+		prev_angle = now_angle;	
 		
 		if(std::fabs(user_rotation) > 0){
 			gyro_pre_value = gyro.yaw;
