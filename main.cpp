@@ -131,6 +131,9 @@ int main(void)
 
 	double now_rotation_vel  = 0;
 	double prev_rotation_vel = 0;
+	double prev_diff_dest = 0;
+	double rotation_velocity = 0;
+	double prev_rotation_velocity = 0;
 	
 	while (!(ds3.button(START) && ds3.button(RIGHT)))
 	{
@@ -177,15 +180,18 @@ int main(void)
 		double left_y = ds3.stick(LEFT_Y);
 		std::array<double, 3> wheel_velocity;
 
+		static double dest_angle = 0;
+
+		prev_rotation_velocity = rotation_velocity;
 		if (ds3.button(SELECT) && ds3.press(LEFT))
 		{
 			gyro.resetYaw(0);
 			std::cout << "gyro was reseted" << std::endl;
+			dest_angle = 0;
 		}
 
 		ds3.button(R1) ? regulation = 0.5 : regulation = 1;
 
-		static double dest_angle = 0;
 		double now_angle = gyro.yaw;
 		double gyro_rad = now_angle * M_PI / 180;
 		double user_rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.8;
@@ -196,53 +202,30 @@ int main(void)
 
 		double diff_dest = dest_angle - now_angle;//目標角度との差をdiff_destに格納
 		integral = integral + diff_dest; //目標角度との差を蓄積（積分操作）
-	    differential = diff_dest - prev_diff_dest;//前回ループ時のの目標角度の差と現在の目標角度との差の変化
-		double prev_diff_dest = diff_dest;	//今回の目標角度との差を次回ループ時の過去の値として利用できるように保存
+	    	differential = diff_dest - prev_diff_dest;//前回ループ時のの目標角度の差と現在の目標角度との差の変化
+		prev_diff_dest = diff_dest;	//今回の目標角度との差を次回ループ時の過去の値として利用できるように保存
 		
 		static bool front = false;
 		static bool right = false;
 		static bool left  = false;
-
-		if(std::fabs(user_rotation) > 0){//もしもL2R2が押されたら目標角度を現在の角度にする
-			dest_angle = now_angle;
-			front = false;
-			right = false;
-			left  = false;
-			integral = 0;//誤差蓄積リセット
-			differential = 0;//変化率リセット
-		}
-
-		constexpr double Kp = 21.0;//p係数
-		constexpr double Ki = 36.0 / 0.3;//i係数
-		constexpr double Kd = 0.075 * 30.0 * 0.3;//d係数
-
-		now_rotation_vel = Kp * diff_dest + Ki * integral - Kd * differential; 
-		double rotation_velocity = now_rotation_vel + prev_rotation_vel;
-		if(rotation_velocity > 100){
-			rotation_velocity = 100;
-		}else if(rotation_velocity < -100){
-			rotation_velocity = -100;
-		}	//+ i_correct_rotation;
 		
-		
-
 		if(!ds3.button(SELECT)){
 			if(ds3.press(UP)){
 				front == true ? front = false : front = true;
 				right = false;
 				left  = false;
-				back  = false;
+		//		back  = false;
 			}else if(ds3.press(RIGHT)){
 				right == true ? right = false : right = true;
 				front = false;
 				left  = false;
-				back  = false;
+		//		back  = false;
 
 			}else if(ds3.press(LEFT)){
 				left  == true ? left  = false : left  = true;
 				front = false;
 				right = false;
-				back  = false;
+		//		back  = false;
 
 			}/*else if(ds3.press(DOWN)){
 				back  == true ? back  = false : back  = true;
@@ -255,14 +238,50 @@ int main(void)
 		if(front == true){
 			dest_angle = 0;
 		}else if(right == true){
-			dest_angle = 90;
-		}else if(left == true){
 			dest_angle = -90;
+		}else if(left == true){
+			dest_angle = 90;
 		}
+		/*if(std::fabs(user_rotation) > 0){//もしもL2R2が押されたら目標角度を現在の角度にする
+			dest_angle = now_angle;
+			front = false;
+			right = false;
+			left  = false;
+			integral = 0;//誤差蓄積リセット
+			differential = 0;//変化率リセット
+		}*/
 
-		wheel_velocity[1] = std::cos(gyro_rad) * left_x + std::sin(gyro_rad) * left_y -rotation_velocity;
-		wheel_velocity[2] = std::cos(gyro_rad + M_PI * 2/3) * left_x + std::sin(gyro_rad + M_PI * 2/3) * left_y -rotation_velocity;
-		wheel_velocity[0] = std::cos(gyro_rad - M_PI * 2/3) * left_x + std::sin(gyro_rad - M_PI * 2/3) * left_y -rotation_velocity;
+		constexpr double Kp = 15;//21.0;//p係数
+		constexpr double Ki = 6;//36.0 / 0.3;//i係数
+		constexpr double Kd = 0.0075 * 8;//0.075 * 30.0 * 0.3;//d係数
+
+		now_rotation_vel = Kp * diff_dest + Ki * integral + Kd * differential;	
+		rotation_velocity = now_rotation_vel - prev_rotation_vel;
+		// - user_rotation;
+
+		double move = prev_rotation_velocity + rotation_velocity - user_rotation;
+		if(std::fabs(user_rotation) > 0){//もしもL2R2が押されたら目標角度を現在の角度にする
+			dest_angle = now_angle;
+			front = false;
+			right = false;
+			left  = false;
+			integral = 0;//誤差蓄積リセット
+			differential = 0;//変化率リセット
+		}
+		
+		if(move > 100){
+			move = 100;
+		}else if(move < -100){
+			move = -100;
+		}
+	
+		//std::cout <<"prv"<<prev_rotation_vel<< std::endl;
+		//std::cout <<"gyro_dest "<<dest_angle << std::endl; 	//+ i_correct_rotation;
+	//	std::cout << move << std::endl;
+
+		wheel_velocity[1] = std::cos(gyro_rad) * left_x + std::sin(gyro_rad) * left_y +move/*rotation_velocity*/;
+		wheel_velocity[2] = std::cos(gyro_rad + M_PI * 2/3) * left_x + std::sin(gyro_rad + M_PI * 2/3) * left_y +/*rotation_velocity*/move;
+		wheel_velocity[0] = std::cos(gyro_rad - M_PI * 2/3) * left_x + std::sin(gyro_rad - M_PI * 2/3) * left_y +/*rotation_velocity*/move;
 
 		if(wheel_velocity[1] < -250){
 			wheel_velocity[1] = -250;
@@ -322,7 +341,7 @@ int main(void)
 		bool left_top_limit = false;
 		bool left_bottom_limit = false;
 		int potentiometer = ms.send(16,40,200);
-//		std::cout <<"potentio:"  << potentiometer << std::endl;
+		std::cout <<"potentio:"  << potentiometer << std::endl;
 
 		static bool recover = false;
 
@@ -355,11 +374,11 @@ int main(void)
 			sent_y = right_x * 1.8 * coat_select;
 			sent_z = right_y * 1.8;
 
-			if(potentiometer < 50 && sent_y > 0){
+			if(potentiometer < 285 && sent_y > 0){
 				sent_y = 0;
 			}else if(z_bottom_limit == true && right_y > 0){
 				sent_z = 0;
-			}else if(potentiometer > 570 && sent_y < 0){
+			}else if(potentiometer > 675 && sent_y < 0){
 				sent_y = 0;
 			}else if(z_top_limit == true && right_y < 0){
 				sent_z = 0;
@@ -389,8 +408,8 @@ int main(void)
 						}
 						break;
 					case 1:
-						sent_y = Y_ARM_PWM;
-						if (potentiometer < 570)
+						sent_y = -Y_ARM_PWM;
+						if (potentiometer > 655)
 						{
 							sent_y = 0;
 							arm_status = 2;
@@ -412,9 +431,9 @@ int main(void)
 
 					case 3:
 						y_pull_now = std::chrono::steady_clock::now();
-						sent_y = -Y_ARM_PWM;
+						sent_y = Y_ARM_PWM;
 						auto y_pull_time = std::chrono::duration_cast<std::chrono::milliseconds>(y_pull_start - y_pull_now);
-						if (potentiometer > 313 || y_pull_time.count() > 2500)
+						if (potentiometer < 495 || y_pull_time.count() > 2500)
 						{
 							sent_y = 0;
 							recover = false;
