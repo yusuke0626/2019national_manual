@@ -388,7 +388,7 @@ int main(void)
 			recover_towel = false;
 			recover_sheets = false;
 			recover_tshirt = false;
-			arm_status = 0;
+			//arm_status = 0;
 		}
 		else
 		{
@@ -399,39 +399,42 @@ int main(void)
 						recover_towel == true ? recover_towel = false : recover_towel = true;
 						recover_sheets = false;
 						recover_tshirt = false;
-					
+
 					}else{
 						arm_status = 2;
 						/*recover_sheets = false;
-						recover_tshirt = false;*/
+						  recover_tshirt = false;*/
 					}
 
 					std::cout << "towel" << std::endl;
 				}
 				else if (ds3.press(SQUARE))
-				{	if(arm_status != 4){
+				{	
+					if(arm_status != 4){
 						recover_sheets == true ? recover_sheets = false : recover_sheets = true;
 						recover_towel = false;
 						recover_tshirt = false;
-					
+
 					}else{
 						arm_status = 2;
-						/*recover_towel = false;
-						recover_tshirt = false;*/
+								   /*recover_towel = false;
+								     recover_tshirt = false;*/
 					}
 					std::cout << "sheets" << std::endl;
 				}
 				else if (ds3.press(CROSS))
 				{
-					if(arm_status != 4){
+					if(arm_status != 4 && arm_status != 7){
 						recover_tshirt == true ? recover_tshirt = false : recover_tshirt = true;
 						recover_towel = false;
 						recover_sheets = false;
-					}else{
+					}else if(arm_status == 4){
 						arm_status = 2;
+					}else{
+						arm_status = 8;
 					}
 					/*recover_towel = false;
-					recover_sheets = false;*/
+					  recover_sheets = false;*/
 					std::cout << "tshirt" << std::endl;
 				}
 			}
@@ -581,7 +584,7 @@ int main(void)
 						if (potentiometer < 295 || y_pull_time.count() > 2500)
 						{
 							sent_y = 0;
-							recover_tshirt = false;
+							//recover_tshirt = false;
 							arm_status = 5;
 						}
 						break;
@@ -590,32 +593,34 @@ int main(void)
 							arm_status = 2;
 						}else{
 							z_fall_start = std::chrono::steady_clock::now();
-                        }
+						}
 						break;
-                    case 5://上げる
-                        sent_z = Z_ARM_PWM;
-                        if (z_bottom_limit == true)
+					case 5://上げる
+						sent_z = Z_ARM_PWM;
+						std::cout << "www" << std::endl;
+						if (z_bottom_limit == true)
 						{
 							sent_z = 0;
 							arm_status = 6;
 						}
 						break;
-                    case 6://前
-                        sent_y = -Y_ARM_PWM;
-                        if (potentiometer > 500)
+					case 6://前
+						sent_y = -Y_ARM_PWM;
+						if (potentiometer > 500)
 						{
 							sent_y = 0;
 							arm_status = 7;
 						}
 						break;
-                    case 7://一旦停止
-                        if(ds3.button(L1) && ds3.press(CROSS)){
+					case 7://一旦停止
+						if(ds3.button(L1) && ds3.press(CROSS)){
 							arm_status = 8;
 						}else{
 							z_fall_start = std::chrono::steady_clock::now();
-                        }
-                    case 8://下げる
-                        z_fall_now = std::chrono::steady_clock::now();
+						}
+						break;
+					case 8://下げる
+						z_fall_now = std::chrono::steady_clock::now();
 						sent_z = -Z_ARM_PWM;
 						z_fall_time = std::chrono::duration_cast<std::chrono::milliseconds>(z_fall_start - z_fall_now);
 						if (z_top_limit == true || z_fall_time.count() > 1500)
@@ -625,11 +630,11 @@ int main(void)
 							y_pull_start = std::chrono::steady_clock::now();
 						}
 						break;
-                    case 9://引く
-                        y_pull_now = std::chrono::steady_clock::now();
+					case 9://引く
+						y_pull_now = std::chrono::steady_clock::now();
 						sent_y = Y_ARM_PWM;
 						y_pull_time = std::chrono::duration_cast<std::chrono::milliseconds>(y_pull_start - y_pull_now);
-						if (potentiometer < 550 || y_pull_time.count() > 2000)
+						if (potentiometer < 500 || y_pull_time.count() > 2000)
 						{
 							sent_y = 0;
 							recover_tshirt = false;
@@ -707,14 +712,14 @@ int main(void)
 			//-------------------------------box-------------------------------/
 			static bool triangle_on = false;
 
-			  if (ds3.press(TRIANGLE) && !(ds3.button(SELECT)) && !ds3.button(L1)){
-			  triangle_on == true ? triangle_on = false : triangle_on = true;
-			  box_start = std::chrono::steady_clock::now();
-			//box_start = std::chrono::steady_clock::now();
+			if (ds3.press(TRIANGLE) && !(ds3.button(SELECT)) && !ds3.button(L1)){
+				triangle_on == true ? triangle_on = false : triangle_on = true;
+				box_start = std::chrono::steady_clock::now();
+				//box_start = std::chrono::steady_clock::now();
 			}
 			if(triangle_on == true){
 				z_bottom_limit == true ? sent_z = 0 : sent_z = 100;
-			       	potentiometer > 295 ? sent_y = Y_ARM_PWM : sent_z = 0;
+				potentiometer > 295 ? sent_y = Y_ARM_PWM : sent_z = 0;
 				if(potentiometer < 295){
 					triangle_on = false;
 					sent_y= 0;
