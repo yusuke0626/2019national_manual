@@ -187,7 +187,7 @@ int main(void)
 		static double rotation_pwm = 0;//かける補正pwm
 		static double prev_rotation_pwm = 0;//前のかけるpwm
 		constexpr double Kp = 8.0;//21.0;//p係数
-		constexpr double Ki = 1.0 / 0.3;//36.0 / 0.3;//i係数
+		constexpr double Ki = 1.0;//36.0 / 0.3;//i係数
 		constexpr double Kd = 0.0075;//0.075 * 30.0 * 0.3;//d係数
 		if (ds3.button(SELECT) && ds3.press(LEFT))
 		{
@@ -200,7 +200,7 @@ int main(void)
 		double delta_t = std::chrono::duration_cast<std::chrono::milliseconds>(time_count - prev_time_count).count();
 		double now_angle = gyro.yaw;//現在角度
 		double user_rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.8;
-		
+
 		static bool front = false;
 		static bool right = false;
 		static bool left  = false;
@@ -308,7 +308,7 @@ int main(void)
 
 		//-----------------------------hanger------------------------------------------------//
 
-		if (ds3.press(SQUARE) && !(ds3.button(SELECT)))
+		if (ds3.press(SQUARE) && !(ds3.button(SELECT)) && !(ds3.button(L1)))
 		{
 			((hanger_flag == true) ? hanger_flag = false : hanger_flag = true);
 			if (hanger_flag == true)
@@ -340,9 +340,11 @@ int main(void)
 		bool left_top_limit = false;
 		bool left_bottom_limit = false;
 		int potentiometer = ms.send(16,40,200);
-		std::cout <<"potentio:"  << potentiometer << std::endl;
+		//std::cout <<"potentio:"  << potentiometer << std::endl;
 
-		static bool recover = false;
+		static bool recover_towel  = false;
+		static bool recover_sheets = false;
+		static bool recover_tshirt = false;
 
 		if (limit_uneffect == false)
 		{
@@ -368,12 +370,13 @@ int main(void)
 		int sent_y = 0;
 		int sent_z = 0;
 
+
 		if (right_distance >= 20)
 		{
 			sent_y = right_x * 1.8 * coat_select;
 			sent_z = right_y * 1.8;
 
-			if(potentiometer < 285 && sent_y > 0){
+			if(potentiometer < 290 && sent_y > 0){
 				sent_y = 0;
 			}else if(z_bottom_limit == true && right_y > 0){
 				sent_z = 0;
@@ -382,18 +385,60 @@ int main(void)
 			}else if(z_top_limit == true && right_y < 0){
 				sent_z = 0;
 			}
-			recover = false;
+			recover_towel = false;
+			recover_sheets = false;
+			recover_tshirt = false;
 			arm_status = 0;
 		}
 		else
 		{
-			if (ds3.press(CROSS))
-			{
-				recover == true ? recover = false : recover = true;
-				std::cout << "cross" << std::endl;
+			if(ds3.button(L1)){
+				if (ds3.press(TRIANGLE))
+				{
+					if(arm_status != 4){
+						recover_towel == true ? recover_towel = false : recover_towel = true;
+						recover_sheets = false;
+						recover_tshirt = false;
+					
+					}else{
+						arm_status = 2;
+						/*recover_sheets = false;
+						recover_tshirt = false;*/
+					}
+
+					std::cout << "towel" << std::endl;
+				}
+				else if (ds3.press(SQUARE))
+				{	if(arm_status != 4){
+						recover_sheets == true ? recover_sheets = false : recover_sheets = true;
+						recover_towel = false;
+						recover_tshirt = false;
+					
+					}else{
+						arm_status = 2;
+						/*recover_towel = false;
+						recover_tshirt = false;*/
+					}
+					std::cout << "sheets" << std::endl;
+				}
+				else if (ds3.press(CROSS))
+				{
+					if(arm_status != 4){
+						recover_tshirt == true ? recover_tshirt = false : recover_tshirt = true;
+						recover_towel = false;
+						recover_sheets = false;
+					}else{
+						arm_status = 2;
+					}
+					/*recover_towel = false;
+					recover_sheets = false;*/
+					std::cout << "tshirt" << std::endl;
+				}
 			}
 
-			if (recover == true)
+
+			std::cout << arm_status << std::endl;
+			if (recover_towel)
 			{
 				//std::cout << arm_status << std::endl;
 				switch (arm_status)
@@ -411,7 +456,7 @@ int main(void)
 						if (potentiometer > 655)
 						{
 							sent_y = 0;
-							arm_status = 2;
+							arm_status = 4;
 							z_fall_start = std::chrono::steady_clock::now();
 						}
 						break;
@@ -431,98 +476,208 @@ int main(void)
 					case 3:
 						y_pull_now = std::chrono::steady_clock::now();
 						sent_y = Y_ARM_PWM;
-						auto y_pull_time = std::chrono::duration_cast<std::chrono::milliseconds>(y_pull_start - y_pull_now);
+						y_pull_time = std::chrono::duration_cast<std::chrono::milliseconds>(y_pull_start - y_pull_now);
 						if (potentiometer < 495 || y_pull_time.count() > 2500)
 						{
 							sent_y = 0;
-							recover = false;
+							recover_towel = false;
 							arm_status = 0;
+						}
+						break;
+					case 4: 
+						if(ds3.button(L1) && ds3.press(TRIANGLE)){
+							arm_status = 2;
+						}
+						break;
+					
+
+				}
+			}else if(recover_sheets){
+				switch (arm_status)
+				{
+					case 0:
+						sent_z = Z_ARM_PWM;
+						if (z_bottom_limit == true)
+						{
+							sent_z = 0;
+							arm_status = 1;
+						}
+						break;
+					case 1:
+						sent_y = -Y_ARM_PWM;
+						if (potentiometer > 465)
+						{
+							sent_y = 0;
+							arm_status = 4;
+							z_fall_start = std::chrono::steady_clock::now();
+						}
+						break;
+
+					case 2:
+						z_fall_now = std::chrono::steady_clock::now();
+						sent_z = -Z_ARM_PWM;
+						z_fall_time = std::chrono::duration_cast<std::chrono::milliseconds>(z_fall_start - z_fall_now);
+						if (z_top_limit == true || z_fall_time.count() > 1500)
+						{
+							sent_z = 0;
+							arm_status = 3;
+							y_pull_start = std::chrono::steady_clock::now();
+						}
+						break;
+
+					case 3:
+						y_pull_now = std::chrono::steady_clock::now();
+						sent_y = Y_ARM_PWM;
+						y_pull_time = std::chrono::duration_cast<std::chrono::milliseconds>(y_pull_start - y_pull_now);
+						if (potentiometer < 295 || y_pull_time.count() > 2500)
+						{
+							sent_y = 0;
+							recover_sheets = false;
+							arm_status = 0;
+						}
+						break;
+					case 4:
+						if(ds3.button(L1) && ds3.press(SQUARE)){
+							arm_status = 2;
+						}
+						break;
+				}
+
+			}else if(recover_tshirt){
+				switch (arm_status)
+				{
+					case 0:
+						sent_z = Z_ARM_PWM;
+						if (z_bottom_limit == true)
+						{
+							sent_z = 0;
+							arm_status = 1;
+						}
+						break;
+					case 1:
+						sent_y = -Y_ARM_PWM;
+						if (potentiometer > 500)
+						{
+							sent_y = 0;
+							arm_status = 4;
+							z_fall_start = std::chrono::steady_clock::now();
+						}
+						break;
+
+					case 2:
+						z_fall_now = std::chrono::steady_clock::now();
+						sent_z = -Z_ARM_PWM;
+						z_fall_time = std::chrono::duration_cast<std::chrono::milliseconds>(z_fall_start - z_fall_now);
+						if (z_top_limit == true || z_fall_time.count() > 1500)
+						{
+							sent_z = 0;
+							arm_status = 3;
+							y_pull_start = std::chrono::steady_clock::now();
+						}
+						break;
+
+					case 3:
+						y_pull_now = std::chrono::steady_clock::now();
+						sent_y = Y_ARM_PWM;
+						y_pull_time = std::chrono::duration_cast<std::chrono::milliseconds>(y_pull_start - y_pull_now);
+						if (potentiometer < 295 || y_pull_time.count() > 2500)
+						{
+							sent_y = 0;
+							recover_tshirt = false;
+							arm_status = 0;
+						}
+						break;
+					case 4:
+						if(ds3.button(L1) && ds3.press(CROSS)){
+							arm_status = 2;
+						}
+						break;
+
+				}
+
+			}
+
+			if(ds3.button(L1) && ds3.button(CIRCLE)){
+				ms.send(16,SOLENOID,251);
+				ms.send(16,SOLENOID,252);
+			}else{
+				ms.send(16,SOLENOID,0);
+			}
+
+			//std::cout << sent_y << sent_z << std::endl;
+			int sent_right = 0; //Right from the circuit side
+			int sent_left = 0;  //Left from the circuit side
+			static bool box_permission = false;
+			static bool circle_on = false;
+
+			if(ds3.press(CIRCLE) && !(ds3.button(L1))){
+				circle_on == true ? circle_on = false :circle_on = true;
+			}
+
+			if (circle_on)
+			{
+				//std::cout << "maru" << std::endl;
+
+				//stop_towel_arm = !(stop_towel_arm);
+				switch (towel_arm_status)
+				{
+					case 0: // Primary status that doesn't detect
+						towel_arm_status++;
+						sent_right = 0;
+						sent_left = 0;
+						box_permission = false;
+						break;
+					case 1:
+						if (limit_uneffect == false)
+						{
+							right_top_limit == true ? sent_right = 0 : sent_right = TOWEL_ARM_PWM;
+							left_top_limit == true ? sent_left = 0 : sent_left = TOWEL_ARM_PWM;
+						}
+
+						if (right_top_limit == true && left_top_limit == true)
+						{
+							towel_arm_status++;
+							box_permission = true;
+							circle_on = false;
+						}
+						break;
+					case 2:
+						if (limit_uneffect == false)
+						{
+							right_bottom_limit == true ? sent_right = 0 : sent_right = -1 * TOWEL_ARM_PWM;
+							left_bottom_limit == true ? sent_left = 0 : sent_left = -1 * TOWEL_ARM_PWM;
+						}
+						if (right_bottom_limit == true && left_bottom_limit == true)
+						{
+							towel_arm_status = 0;
+							circle_on = false;
+							box_permission = false;
 						}
 						break;
 				}
 			}
-		}
-
-		if(ds3.button(L1) && ds3.button(CIRCLE)){
-			ms.send(16,SOLENOID,251);
-			ms.send(16,SOLENOID,252);
-		}else{
-			ms.send(16,SOLENOID,0);
-		}
-
-		//std::cout << sent_y << sent_z << std::endl;
-		int sent_right = 0; //Right from the circuit side
-		int sent_left = 0;  //Left from the circuit side
-		static bool box_permission = false;
-		static bool circle_on = false;
-
-		if(ds3.press(CIRCLE) && !(ds3.button(L1))){
-			circle_on == true ? circle_on = false :circle_on = true;
-		}
-
-		if (circle_on)
-		{
-			//std::cout << "maru" << std::endl;
-
-			//stop_towel_arm = !(stop_towel_arm);
-			switch (towel_arm_status)
-			{
-				case 0: // Primary status that doesn't detect
-					towel_arm_status++;
-					sent_right = 0;
-					sent_left = 0;
-					box_permission = false;
-					break;
-				case 1:
-					if (limit_uneffect == false)
-					{
-						right_top_limit == true ? sent_right = 0 : sent_right = TOWEL_ARM_PWM;
-						left_top_limit == true ? sent_left = 0 : sent_left = TOWEL_ARM_PWM;
-					}
-
-					if (right_top_limit == true && left_top_limit == true)
-					{
-						towel_arm_status++;
-						box_permission = true;
-						circle_on = false;
-					}
-					break;
-				case 2:
-					if (limit_uneffect == false)
-					{
-						right_bottom_limit == true ? sent_right = 0 : sent_right = -1 * TOWEL_ARM_PWM;
-						left_bottom_limit == true ? sent_left = 0 : sent_left = -1 * TOWEL_ARM_PWM;
-					}
-					if (right_bottom_limit == true && left_bottom_limit == true)
-					{
-						towel_arm_status = 0;
-						circle_on = false;
-						box_permission = false;
-					}
-					break;
-			}
-		}
 
 
-		ms.send(10,TOWEL,-sent_right);
-		ms.send(2, TOWEL,-sent_left);
+			ms.send(10,TOWEL,-sent_right);
+			ms.send(2, TOWEL,-sent_left);
 
-		//-------------------------------box-------------------------------/
-		static bool triangle_on = false;
+			//-------------------------------box-------------------------------/
+			static bool triangle_on = false;
 
-		if (ds3.press(TRIANGLE) && !(ds3.button(SELECT))){
-			triangle_on = true;
-			box_start = std::chrono::steady_clock::now();
+			  if (ds3.press(TRIANGLE) && !(ds3.button(SELECT)) && !ds3.button(L1)){
+			  triangle_on == true ? triangle_on = false : triangle_on = true;
+			  box_start = std::chrono::steady_clock::now();
 			//box_start = std::chrono::steady_clock::now();
-		}
-
-		if(triangle_on == true){
-			if(potentiometer < 50){
-				sent_y = 150;
-			}else{
-				sent_y = 0;
-				triangle_on = false;
-			}	
+			}
+			if(triangle_on == true){
+				z_bottom_limit == true ? sent_z = 0 : sent_z = 100;
+			       	potentiometer > 295 ? sent_y = Y_ARM_PWM : sent_z = 0;
+				if(potentiometer < 295){
+					triangle_on = false;
+					sent_y= 0;
+					sent_z = 0;
+				}	
+			}
 		}
 		ms.send(10, ARM, sent_y * regulation);
 		ms.send(2, ARM,  sent_z * regulation);
