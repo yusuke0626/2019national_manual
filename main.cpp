@@ -22,9 +22,9 @@ int main(void)
 
 	//------MDD------//
 	/*constexpr int RIGHT_UP   = 10;
-	constexpr int RIGHT_DOWN =  2;
-	constexpr int LEFT_UP    = 11;//どっちかと言うと16v
-	constexpr int LEFT_DOWN  = 16;//''*/
+	  constexpr int RIGHT_DOWN =  2;
+	  constexpr int LEFT_UP    = 11;//どっちかと言うと16v
+	  constexpr int LEFT_DOWN  = 16;//''*/
 
 	//-----PORT------//
 	constexpr int MOTOR    = 2;
@@ -135,10 +135,10 @@ int main(void)
 	while (!(ds3.button(START) && ds3.button(RIGHT)))
 	{
 		/*std::cout << "rt" << gpioRead(RIGHT_TOP_LIMIT) << std::endl;
-		std::cout << "rb" << gpioRead(RIGHT_BOTTOM_LIMIT) << std::endl;
-		std::cout << "lt" << gpioRead(LEFT_TOP_LIMIT) << std::endl;
-		std::cout << "lb" << gpioRead(LEFT_BOTTOM_LIMIT) << std::endl;
-		*/gpioWrite(RUNLED,true);
+		  std::cout << "rb" << gpioRead(RIGHT_BOTTOM_LIMIT) << std::endl;
+		  std::cout << "lt" << gpioRead(LEFT_TOP_LIMIT) << std::endl;
+		  std::cout << "lb" << gpioRead(LEFT_BOTTOM_LIMIT) << std::endl;
+		  */gpioWrite(RUNLED,true);
 		gpioWrite(SLEEPLED,true);
 		ds3.update();
 		gyro.updata();
@@ -176,49 +176,35 @@ int main(void)
 		double left_x = ds3.stick(LEFT_X);
 		double left_y = ds3.stick(LEFT_Y);
 		std::array<double, 3> wheel_velocity;
-        static auto time_count = 0,prev_time_count = 0;
-        static double dest_angle = 0;//目標角度
+		static std::chrono::steady_clock::time_point time_count,prev_time_count;
+		static double dest_angle = 0;//目標角度
 		static double diff_dest = 0;//現在の誤差
-	    static double prev_diff_dest = 0;//前の誤差
-        //static double prev_prev_diff_dest = 0;//前の前の誤差
-        static double diff_vel = 0;//速度誤差
-        static double prev_diff_vel = 0;//前速度誤差
-        static double acceleration = 0;//角加速度誤差
-        static double rotation_pwm = 0;//かける補正pwm
-        static double prev_rotation_pwm = 0;//前のかけるpwm
-        constexpr double Kp = 15;//21.0;//p係数
-		constexpr double Ki = 6;//36.0 / 0.3;//i係数
-		constexpr double Kd = 0.0075 * 8;//0.075 * 30.0 * 0.3;//d係数
+		static double prev_diff_dest = 0;//前の誤差
+		//static double prev_prev_diff_dest = 0;//前の前の誤差
+		static double diff_vel = 0;//速度誤差
+		static double prev_diff_vel = 0;//前速度誤差
+		static double acceleration = 0;//角加速度誤差
+		static double rotation_pwm = 0;//かける補正pwm
+		static double prev_rotation_pwm = 0;//前のかけるpwm
+		constexpr double Kp = 8.0;//21.0;//p係数
+		constexpr double Ki = 1.0 / 0.3;//36.0 / 0.3;//i係数
+		constexpr double Kd = 0.0075;//0.075 * 30.0 * 0.3;//d係数
 		if (ds3.button(SELECT) && ds3.press(LEFT))
 		{
 			gyro.resetYaw(0);
 			std::cout << "gyro was reseted" << std::endl;
 			dest_angle = 0;
 		}
-        time_count = std::chrono::steady_clock::now();
-        double delta_t = std::chrono::duration_cast<std::chrono::microseconds>(time_count - prev_time_count).count();
-        double now_angle = gyro.yaw;//現在角度
+		time_count = std::chrono::steady_clock::now();
+		//prev_time_count = time_count;
+		double delta_t = std::chrono::duration_cast<std::chrono::milliseconds>(time_count - prev_time_count).count();
+		double now_angle = gyro.yaw;//現在角度
 		double user_rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.8;
-        //------------微分計算区間--------------//
-		diff_dest = dest_angle - now_angle;
-        diff_dest = diff_dest - (int)diff_dest / 180 * 360;//目標角度との差をdiff_destに格納
-        diff_vel = (diff_dest - prev_diff_dest) / delta_t;//1制御周期での微小角度の変化量を角速度とする
-        acceleration = (diff_vel - prev_diff_vel) / delta_t;//1制御周期での微小角速度の変化量を角加速度とする
-
-        now_rotation_vel = Kp * diff_vel + Ki * diff_dest + Kd * acceleration;
-		double move_velocity = now_rotation_vel + prev_rotation_vel;
-        //--------------更新区間---------------//
-        prev_time_count = time_count;
-        prev_diff_dest = diff_dest;
-       // prev_prev_diff_dest = prev_diff_dest;
-        prev_diff_vel = diff_vel;
-        prev_rotation_vel = now_rotation_vel;
-		// - user_rotation;
-		//double move = prev_rotation_velocity + rotation_velocity - user_rotation;
-        static bool front = false
-        static bool right = false;
+		
+		static bool front = false;
+		static bool right = false;
 		static bool left  = false;
-        static bool back  = false;
+		static bool back  = false;
 
 		if(!ds3.button(SELECT)){
 			if(ds3.press(UP)){
@@ -252,28 +238,48 @@ int main(void)
 			dest_angle = -90;
 		}else if(left == true){
 			dest_angle = 90;
-		}else{
-            dest_angle = 180;
-        }
+		}else if(back == true){
+			dest_angle = 180;
+		}
 		if(std::fabs(user_rotation) > 0){//もしもL2R2が押されたら目標角度を現在の角度にする
 			dest_angle = now_angle;
 			front = false;
 			right = false;
 			left  = false;
-			integral = 0;//誤差蓄積リセット
-			differential = 0;//変化率リセット
+			back  = false;
+			//integral = 0;//誤差蓄積リセット
+			//differential = 0;//変化率リセット
 		}
 
+
+		//------------微分計算区間--------------//
+		diff_dest = dest_angle - now_angle;
+		diff_dest = diff_dest - (int)diff_dest / 180 * 360;//目標角度との差をdiff_destに格納
+		diff_vel = (diff_dest - prev_diff_dest) / (delta_t);//1制御周期での微小角度の変化量を角速度とする
+		acceleration = (diff_vel - prev_diff_vel) / (delta_t);//1制御周期での微小角速度の変化量を角加速度とする
+
+		now_rotation_vel = Kp * diff_vel + Ki * diff_dest + Kd * acceleration;
+		double move_velocity = now_rotation_vel + prev_rotation_vel;
+		//--------------更新区間---------------//
+		//prev_time_count = time_count;
+		prev_diff_dest = diff_dest;
+		// prev_prev_diff_dest = prev_diff_dest;
+		prev_rotation_vel = now_rotation_vel;
+		prev_diff_vel = diff_vel;
+		// - user_rotation;
+		//double move = prev_rotation_velocity + rotation_velocity - user_rotation;
+		//std::cout << move_velocity << std::endl;//-----------------------------------------
 		if(move_velocity > 100){
-			move = 100;
+			move_velocity = 100;
 		}else if(move_velocity < -100){
-			move = -100;
+			move_velocity = -100;
 		}
 
-        double gyro_rad = now_angle * M_PI / 180;
-		wheel_velocity[1] = std::cos(gyro_rad) * left_x + std::sin(gyro_rad) * left_y + move_velocity;
-		wheel_velocity[2] = std::cos(gyro_rad + M_PI * 2/3) * left_x + std::sin(gyro_rad + M_PI * 2/3) * left_y + move_velocity;/*rotation_velocity*///move;
-		wheel_velocity[0] = std::cos(gyro_rad - M_PI * 2/3) * left_x + std::sin(gyro_rad - M_PI * 2/3) * left_y + move_velocity;/*rotation_velocity*///move;
+		prev_time_count = time_count;
+		double gyro_rad = now_angle * M_PI / 180;
+		wheel_velocity[1] = std::cos(gyro_rad) * left_x + std::sin(gyro_rad) * left_y + move_velocity - user_rotation;
+		wheel_velocity[2] = std::cos(gyro_rad + M_PI * 2/3) * left_x + std::sin(gyro_rad + M_PI * 2/3) * left_y + move_velocity - user_rotation;/*rotation_velocity*///move;
+		wheel_velocity[0] = std::cos(gyro_rad - M_PI * 2/3) * left_x + std::sin(gyro_rad - M_PI * 2/3) * left_y + move_velocity - user_rotation;/*rotation_velocity*///move;
 
 		if(wheel_velocity[1] < -250){
 			wheel_velocity[1] = -250;
@@ -298,7 +304,7 @@ int main(void)
 		ms.send(11, MOTOR, -wheel_velocity[2] * 0.8 * regulation);
 		ms.send(16, MOTOR, -wheel_velocity[0] * 0.8 * regulation);
 
-//		std::cout << wheel_velocity[1] << std::endl;
+		//		std::cout << wheel_velocity[1] << std::endl;
 
 		//-----------------------------hanger------------------------------------------------//
 
@@ -498,8 +504,8 @@ int main(void)
 		}
 
 
-		ms.send(10,TOWEL,sent_right);
-		ms.send(2, TOWEL,sent_left);
+		ms.send(10,TOWEL,-sent_right);
+		ms.send(2, TOWEL,-sent_left);
 
 		//-------------------------------box-------------------------------/
 		static bool triangle_on = false;
