@@ -206,7 +206,7 @@ int main(void)
 		static bool left  = false;
 		static bool back  = false;
 
-		if(!ds3.button(SELECT)){
+		/*if(!ds3.button(SELECT)){
 			if(ds3.press(UP)){
 				front == true ? front = false : front = true;
 				right = false;
@@ -230,9 +230,9 @@ int main(void)
 				right = false;
 				left  = false;
 			}
-		}
+		}*/
 
-		if(front == true){
+		/*if(front == true){
 			dest_angle = 0;
 		}else if(right == true){
 			dest_angle = -90;
@@ -240,7 +240,7 @@ int main(void)
 			dest_angle = 90;
 		}else if(back == true){
 			dest_angle = 180;
-		}
+		}*/
 		if(std::fabs(user_rotation) > 0){//もしもL2R2が押されたら目標角度を現在の角度にする
 			dest_angle = now_angle;
 			front = false;
@@ -308,7 +308,7 @@ int main(void)
 
 		//-----------------------------hanger------------------------------------------------//
 
-		if (ds3.press(SQUARE) && !(ds3.button(SELECT)) && !(ds3.button(L1)))
+		if (ds3.press(DOWN))
 		{
 			((hanger_flag == true) ? hanger_flag = false : hanger_flag = true);
 			if (hanger_flag == true)
@@ -392,7 +392,6 @@ int main(void)
 		}
 		else
 		{
-			if(ds3.button(L1)){
 				if (ds3.press(TRIANGLE))
 				{
 					if(arm_status != 4){
@@ -437,7 +436,6 @@ int main(void)
 					  recover_sheets = false;*/
 					std::cout << "tshirt" << std::endl;
 				}
-			}
 
 
 			std::cout << arm_status << std::endl;
@@ -488,7 +486,7 @@ int main(void)
 						}
 						break;
 					case 4:
-						if(ds3.button(L1) && ds3.press(TRIANGLE)){
+						if(ds3.press(TRIANGLE)){
 							arm_status = 2;
 						}
 						break;
@@ -507,7 +505,7 @@ int main(void)
 						break;
 					case 1:
 						sent_y = -Y_ARM_PWM;
-						if (potentiometer > 465)
+						if (potentiometer > 435)
 						{
 							sent_y = 0;
 							arm_status = 4;
@@ -534,15 +532,24 @@ int main(void)
 						if (potentiometer < 295 || y_pull_time.count() > 2500)
 						{
 							sent_y = 0;
-							recover_sheets = false;
-							arm_status = 0;
+							arm_status = 5;
 						}
 						break;
 					case 4:
-						if(ds3.button(L1) && ds3.press(SQUARE)){
+						if(ds3.press(SQUARE)){
 							arm_status = 2;
 						}
 						break;
+					case 5:
+						sent_z = Z_ARM_PWM;
+						if (z_bottom_limit == true)
+						{
+							sent_z = 0;
+							arm_status = 0;
+							recover_sheets = false;
+						}
+						break;
+
 				}
 
 			}else if(recover_tshirt){
@@ -558,7 +565,7 @@ int main(void)
 						break;
 					case 1://前行く
 						sent_y = -Y_ARM_PWM;
-						if (potentiometer > 500)
+						if (potentiometer > 480)
 						{
 							sent_y = 0;
 							arm_status = 4;
@@ -613,7 +620,7 @@ int main(void)
 						}
 						break;
 					case 7://一旦停止
-						if(ds3.button(L1) && ds3.press(CROSS)){
+						if(ds3.press(CROSS)){
 							arm_status = 8;
 						}else{
 							z_fall_start = std::chrono::steady_clock::now();
@@ -658,7 +665,7 @@ int main(void)
 			static bool box_permission = false;
 			static bool circle_on = false;
 
-			if(ds3.press(CIRCLE) && !(ds3.button(L1))){
+			if(ds3.press(UP)){
 				circle_on == true ? circle_on = false :circle_on = true;
 			}
 
@@ -710,18 +717,18 @@ int main(void)
 			ms.send(2, TOWEL,-sent_left);
 
 			//-------------------------------box-------------------------------/
-			static bool triangle_on = false;
+			static bool up_on = false;
 
-			if (ds3.press(TRIANGLE) && !(ds3.button(SELECT)) && !ds3.button(L1)){
-				triangle_on == true ? triangle_on = false : triangle_on = true;
+			if (ds3.press(CIRCLE)){
+				up_on == true ? up_on = false : up_on = true;
 				box_start = std::chrono::steady_clock::now();
 				//box_start = std::chrono::steady_clock::now();
 			}
-			if(triangle_on == true){
+			if(up_on == true){
 				z_bottom_limit == true ? sent_z = 0 : sent_z = 100;
 				potentiometer > 295 ? sent_y = Y_ARM_PWM : sent_z = 0;
 				if(potentiometer < 295){
-					triangle_on = false;
+					up_on = false;
 					sent_y= 0;
 					sent_z = 0;
 				}	
