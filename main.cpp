@@ -340,11 +340,12 @@ int main(void)
 		bool left_top_limit = false;
 		bool left_bottom_limit = false;
 		int potentiometer = ms.send(16,40,200);
-		//std::cout <<"potentio:"  << potentiometer << std::endl;
+		std::cout <<"potentio:"  << potentiometer << std::endl;
 
 		static bool recover_towel  = false;
 		static bool recover_sheets = false;
 		static bool recover_tshirt = false;
+		static bool disturbanc     = false;
 
 		if (limit_uneffect == false)
 		{
@@ -388,57 +389,66 @@ int main(void)
 			recover_towel = false;
 			recover_sheets = false;
 			recover_tshirt = false;
+			disturbanc     = false;
 			//arm_status = 0;
 		}
 		else
 		{
-				if (ds3.press(TRIANGLE))
-				{
-					if(arm_status != 4){
-						recover_towel == true ? recover_towel = false : recover_towel = true;
-						recover_sheets = false;
-						recover_tshirt = false;
+			if((ds3.button(L1) && ds3.button(R1)) && ds3.press(TRIANGLE)){
+				disturbanc = true;
+				recover_sheets = false;
+				recover_tshirt = false;
+				recover_towel  = false;
+			}
 
-					}else{
-						arm_status = 2;
-						/*recover_sheets = false;
-						  recover_tshirt = false;*/
-					}
+			else if (ds3.press(TRIANGLE))
+			{
+				if(arm_status != 4){
+					recover_towel == true ? recover_towel = false : recover_towel = true;
+					recover_sheets = false;
+					recover_tshirt = false;
+					disturbanc = false;
 
-					std::cout << "towel" << std::endl;
+				}else{
+					arm_status = 2;
+					/*recover_sheets = false;
+					  recover_tshirt = false;*/
 				}
-				else if (ds3.press(SQUARE))
-				{	
-					if(arm_status != 4){
-						recover_sheets == true ? recover_sheets = false : recover_sheets = true;
-						recover_towel = false;
-						recover_tshirt = false;
 
-					}else{
-						arm_status = 2;
-								   /*recover_towel = false;
-								     recover_tshirt = false;*/
-					}
-					std::cout << "sheets" << std::endl;
-				}
-				else if (ds3.press(CROSS))
-				{
-					if(arm_status != 4 && arm_status != 7){
-						recover_tshirt == true ? recover_tshirt = false : recover_tshirt = true;
-						recover_towel = false;
-						recover_sheets = false;
-					}else if(arm_status == 4){
-						arm_status = 2;
-					}else{
-						arm_status = 8;
-					}
+				std::cout << "towel" << std::endl;
+			}
+			else if (ds3.press(SQUARE))
+			{	
+				if(arm_status != 4){
+					recover_sheets == true ? recover_sheets = false : recover_sheets = true;
+					recover_towel = false;
+					recover_tshirt = false;
+					disturbanc = false;
+
+				}else{
+					arm_status = 2;
 					/*recover_towel = false;
-					  recover_sheets = false;*/
-					std::cout << "tshirt" << std::endl;
+					recover_tshirt = false;*/
 				}
+					std::cout << "sheets" << std::endl;
+			}
+			else if (ds3.press(CROSS))
+			{
+				if(arm_status != 4 && arm_status != 7){
+					recover_tshirt == true ? recover_tshirt = false : recover_tshirt = true;
+					recover_towel = false;
+					recover_sheets = false;
+					disturbanc = false;
+				}else if(arm_status == 4){
+					arm_status = 2;
+				}else{
+					arm_status = 8;		
+				}
+					std::cout << "tshirt" << std::endl;
+			}
 
 
-			std::cout << arm_status << std::endl;
+			//std::cout << arm_status << std::endl;
 			if (recover_towel)
 			{
 				//std::cout << arm_status << std::endl;
@@ -476,7 +486,7 @@ int main(void)
 
 					case 3:
 						y_pull_now = std::chrono::steady_clock::now();
-						sent_y = Y_ARM_PWM;
+						sent_y = Y_ARM_PWM * 0.7;
 						y_pull_time = std::chrono::duration_cast<std::chrono::milliseconds>(y_pull_start - y_pull_now);
 						if (potentiometer < 495 || y_pull_time.count() > 2500)
 						{
@@ -650,7 +660,56 @@ int main(void)
 						break;
 				}
 
+			}else if(disturbanc == true){
+				switch (arm_status)
+				{
+					case 0://上がる
+						sent_z = Z_ARM_PWM;
+						if (z_bottom_limit == true)
+						{
+							sent_z = 0;
+							arm_status = 1;
+						}
+						break;
+					case 1://前行く
+						sent_y = -Y_ARM_PWM;
+						if (potentiometer > 560)
+						{
+							sent_y = 0;
+							arm_status = 2;
+						}
+						break;
+
+					case 2://下がる
+						z_fall_now = std::chrono::steady_clock::now();
+						sent_z = -Z_ARM_PWM;
+						z_fall_time = std::chrono::duration_cast<std::chrono::milliseconds>(z_fall_start - z_fall_now);
+						if (z_top_limit == true || z_fall_time.count() > 1500)
+						{
+							sent_z = 0;
+							arm_status = 3;
+							y_pull_start = std::chrono::steady_clock::now();
+						}
+						break;
+					case 3:
+						sent_y = -Y_ARM_PWM;
+						if (potentiometer > 670)
+						{
+							sent_y = 0;
+							arm_status = 4;
+						}
+						break;
+					case 4:
+						sent_z = Z_ARM_PWM;
+						if (z_bottom_limit == true)
+						{
+							sent_z = 0;
+							arm_status = 0;
+							disturbanc = false;
+						}
+				}
 			}
+
 
 			if(ds3.button(L1) && ds3.button(CIRCLE)){
 				ms.send(16,SOLENOID,251);
@@ -734,8 +793,8 @@ int main(void)
 				}	
 			}
 		}
-		ms.send(10, ARM, sent_y * regulation);
-		ms.send(2, ARM,  sent_z * regulation);
+		ms.send(10, ARM, sent_y /* regulation*/);
+		ms.send(2, ARM,  sent_z /* regulation*/);
 	}
 	gpioWrite(RUNLED,false);
 	gpioWrite(SLEEPLED,false);
