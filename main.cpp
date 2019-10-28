@@ -16,7 +16,6 @@ DualShock3 ds3;
 
 int main(void)
 {
-
 	constexpr int RUNLED = 13;
 	constexpr int SLEEPLED = 27;
 
@@ -67,6 +66,7 @@ int main(void)
 		std::cout << "error" << std::endl;
 		return -1;
 	}
+	ms.send(84,10,40);
 
 	gpioSetMode(13, PI_OUTPUT);
 	gpioWrite(13, true);
@@ -312,7 +312,7 @@ int main(void)
 				potentiometer = 480;	
 			}
 
-			std::cout <<"potentio:"  << potentiometer << std::endl;
+			//std::cout <<"potentio:"  << potentiometer << std::endl;
 
 			static bool recover_towel  = false;
 			static bool recover_sheets = false;
@@ -592,7 +592,7 @@ int main(void)
 							break;
 						case 5://上げる
 							sent_z = Z_ARM_PWM;
-							std::cout << "www" << std::endl;
+							//std::cout << "www" << std::endl;
 							if (z_bottom_limit == true)
 							{
 								sent_z = 0;
@@ -835,6 +835,7 @@ int main(void)
 						break;
 				}
 				sent_or_not = true;
+				std::cout << led_mode << std::endl;
 			}
 
 		}
