@@ -256,7 +256,7 @@ int main(void)
                 wheel_velocity[0] = 250;
             }
 
-            ds3.button(R1) ? regulation = 0.5 : regulation = 1;
+            (ds3.button(R1) && !ds3.button(L1))? regulation = 0.5 : regulation = 1;
             ms.send(10, MOTOR, -wheel_velocity[1] * 0.8 * regulation);
             ms.send(11, MOTOR, -wheel_velocity[2] * 0.8 * regulation);
             ms.send(16, MOTOR, -wheel_velocity[0] * 0.8 * regulation);
