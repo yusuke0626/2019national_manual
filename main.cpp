@@ -283,12 +283,17 @@ led_mode = 6;
 led_mode = 7;
                 }
             }
-
+	    static bool potentio_uneffect = false;
             static bool limit_uneffect = false;
-            if (ds3.button(SELECT) && ds3.press(CIRCLE))
+            
+	    if (ds3.button(SELECT) && ds3.press(CIRCLE))
             {
                 ((limit_uneffect = true) ? limit_uneffect = false : limit_uneffect = true);
             }
+
+	    if(ds3.button(L1) && ds3.press(R1)){
+	    	potentio_uneffect = !(potentio_uneffect);
+	    }
             //-----------------------------arm-------------------------------------------------//
             //bool y_front_limit = false;
             //bool y_back_limit = false;
@@ -298,7 +303,14 @@ led_mode = 7;
             bool right_bottom_limit = false;
             bool left_top_limit = false;
             bool left_bottom_limit = false;
-            int potentiometer = ms.send(16,40,200);
+	    int potentiometer;
+
+	    if(potentio_uneffect == false){
+            	potentiometer = ms.send(16,40,200);
+	    }else{
+	    	potentiometer = 480;	
+	    }
+	    
             std::cout <<"potentio:"  << potentiometer << std::endl;
 
             static bool recover_towel  = false;
@@ -317,7 +329,7 @@ led_mode = 7;
                 left_top_limit = gpioRead(LEFT_TOP_LIMIT);
                 left_bottom_limit = gpioRead(LEFT_BOTTOM_LIMIT);
             }
-
+	    
 
             //std::cout <<  y_front_limit  << std::endl;
             //std::cout <<  left_top_limit << std::endl;
