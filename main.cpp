@@ -49,11 +49,11 @@ int main(void)
     constexpr int Y_ARM_PWM = 250;
     constexpr int Z_ARM_PWM = 200;
 
-    constexpr bool final_mode = false;
-
     int led_mode     = 0;
     bool sent_or_not = true;
     int priventeer   = led_mode;
+
+    int sent_righter = 0;
 
     ds3.update();
     try
@@ -97,22 +97,25 @@ int main(void)
     int tape_led_mode = 0;
     int arm_status = 0;
     int towel_arm_status = 0;
-    int box_time = 0;
+    bool coat_changed = false;
+    int data = 40;
 
     std::chrono::steady_clock::time_point z_fall_start, z_fall_now, y_pull_start,y_pull_now,box_start,box_now;
     std::chrono::milliseconds z_fall_time,y_pull_time,box_wait_time;
     while (coat_select == 0)
     {
         ds3.update();
-        if (ds3.button(SELECT) && ds3.button(CROSS))
-        {
-            coat_select = 1;
-            std::cout << "RED" << std::endl;
-        }
-        else if (ds3.button(SELECT) && ds3.button(TRIANGLE))
+        if (ds3.button(SELECT) && ds3.button(CIRCLE))
         {
             coat_select = -1;
+            std::cout << "RED" << std::endl;
+	    ms.send(84,20,data);
+        }
+        else if (ds3.button(SELECT) && ds3.button(CROSS))
+        {
+            coat_select = 1;
             std::cout << "BLUE" << std::endl;
+	    ms.send(84,30,data);
         }
         gpioWrite(SLEEPLED,true);
     }
@@ -158,6 +161,7 @@ int main(void)
             //--------------------------------coat change-----------------------------------//
             if (ds3.button(SELECT) && ds3.press(TRIANGLE))
             {
+		coat_changed = true;
                 coat_select = -coat_select;
                 ((coat_select == 1) ? tape_led_mode = 2 : tape_led_mode = 3);
             }
@@ -182,8 +186,6 @@ int main(void)
             static double diff_vel = 0;//速度誤差
             static double prev_diff_vel = 0;//前速度誤差
             static double acceleration = 0;//角加速度誤差
-            static double rotation_pwm = 0;//かける補正pwm
-            static double prev_rotation_pwm = 0;//前のかけるpwm
             constexpr double Kp = 8.0;//21.0;//p係数
             constexpr double Ki = 1.0;//36.0 / 0.3;//i係数
             constexpr double Kd = 0.0075;//0.075 * 30.0 * 0.3;//d係数
@@ -200,52 +202,8 @@ int main(void)
             double now_angle = gyro.yaw;//現在角度
             double user_rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.8;
 
-            static bool front = false;
-            static bool right = false;
-            static bool left  = false;
-            static bool back  = false;
-
-            /*if(!ds3.button(SELECT)){
-              if(ds3.press(UP)){
-              front == true ? front = false : front = true;
-              right = false;
-              left  = false;
-              back  = false;
-              }else if(ds3.press(RIGHT)){
-              right == true ? right = false : right = true;
-              front = false;
-              left  = false;
-              back  = false;
-
-              }else if(ds3.press(LEFT)){
-              left  == true ? left  = false : left  = true;
-              front = false;
-              right = false;
-              back  = false;
-
-              }else if(ds3.press(DOWN)){
-              back  == true ? back  = false : back  = true;
-              front = false;
-              right = false;
-              left  = false;
-              }
-              }*/
-
-            /*if(front == true){
-              dest_angle = 0;
-              }else if(right == true){
-              dest_angle = -90;
-              }else if(left == true){
-              dest_angle = 90;
-              }else if(back == true){
-              dest_angle = 180;
-              }*/
             if(std::fabs(user_rotation) > 0){//もしもL2R2が押されたら目標角度を現在の角度にする
                 dest_angle = now_angle;
-                front = false;
-                right = false;
-                left  = false;
-                back  = false;
                 //integral = 0;//誤差蓄積リセット
                 //differential = 0;//変化率リセット
             }
@@ -322,7 +280,7 @@ led_mode = 6;
                 {
                     ms.send(2, HANGER, 0);
                     tape_led_mode = 7;
-led_mode = ;
+led_mode = 7;
                 }
             }
 
@@ -366,7 +324,6 @@ led_mode = ;
 
             double right_x = ds3.stick(RIGHT_X);
             double right_y = ds3.stick(RIGHT_Y);
-            double right_theta = std::atan2(right_x, right_y);
             double right_distance = std::hypot(right_x, right_y);
             //std::cout << right_distance << std::endl;
             //		std::cout << right_distance << std::endl;
@@ -729,8 +686,8 @@ led_mode = ;
                 //std::cout << sent_y << sent_z << std::endl;
                 int sent_right = 0; //Right from the circuit side
                 int sent_left = 0;  //Left from the circuit side
-                static bool box_permission = false;
                 static bool circle_on = false;
+		sent_righter = sent_right;
 
                 if(ds3.press(UP)){
                     circle_on == true ? circle_on = false :circle_on = true;
@@ -747,7 +704,6 @@ led_mode = ;
                             towel_arm_status++;
                             sent_right = 0;
                             sent_left = 0;
-                            box_permission = false;
                             break;
                         case 1:
                             if (limit_uneffect == false)
@@ -759,7 +715,6 @@ led_mode = ;
                             if (right_top_limit == true && left_top_limit == true)
                             {
                                 towel_arm_status++;
-                                box_permission = true;
                                 circle_on = false;
                             }
                             break;
@@ -773,7 +728,6 @@ led_mode = ;
                             {
                                 towel_arm_status = 0;
                                 circle_on = false;
-                                box_permission = false;
                             }
                             break;
                     }
@@ -804,13 +758,15 @@ led_mode = ;
             ms.send(10, ARM, sent_y /* regulation*/);
             ms.send(2, ARM,  sent_z /* regulation*/);
 
-            if(coat_select > 0){
+            if(coat_select > 0 && coat_changed == true){
                 led_mode = 2;
-            }else if(coat_select < 0){
+		coat_changed = false;
+            }else if(coat_select < 0 && coat_changed == true){
                 led_mode = 3;
-            }else if(sent_right > 0){
+		coat_changed = false;
+            }else if(sent_righter > 0){
                 led_mode = 8;
-            }else if(sent_right < 0){
+            }else if(sent_righter < 0){
                 led_mode = 9;
             }else if(sent_y != 0){
                 led_mode = 11;
@@ -826,43 +782,43 @@ led_mode = ;
             if(sent_or_not != true){
                 switch(led_mode){
                     case 1:
-                        ms.send(84,10,60);
+                        ms.send(84,10,data);
                         break;
                     case 2:
-                        ms.send(84,20,60);
+                        ms.send(84,20,data);
                         break;
                     case 3:
-                        ms.send(84,30,60);
+                        ms.send(84,30,data);
                         break;
                     case 4:
-                        ms.send(84,40,60);
+                        ms.send(84,40,data);
                         break;
                     case 5:
-                        ms.send(84,50,60);
+                        ms.send(84,50,data);
                         break;
                     case 6:
-                        ms.send(84,60,60);
+                        ms.send(84,60,data);
                         break;
                     case 7:
-                        ms.send(84,70,60);
+                        ms.send(84,70,data);
                         break;
                     case 8:
                         ms.send(84,80,100);
                         break;
                     case 9:
-                        ms.send(84,90,100);
+                        ms.send(84,90,data);
                         break;
                     case 10:
-                        ms.send(84,100,60);
+                        ms.send(84,100,data);
                         break;
                     case 11:
-                        ms.send(84,110,60);
+                        ms.send(84,110,data);
                         break;
                     case 12:
-                        ms.send(84,120,60);
+                        ms.send(84,120,data);
                         break;
                     case 13:
-                        ms.send(84,200,60);
+                        ms.send(84,200,data);
                         break;
                 }
                 sent_or_not = true;
