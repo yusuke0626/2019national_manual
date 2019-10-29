@@ -753,7 +753,7 @@ int main(void)
 				//-------------------------------box-------------------------------/
 				static bool up_on = false;
 
-				if (ds3.press(CIRCLE)){
+				if (ds3.press(CIRCLE) && !ds3.button(L1)){
 					up_on == true ? up_on = false : up_on = true;
 					box_start = std::chrono::steady_clock::now();
 					//box_start = std::chrono::steady_clock::now();
@@ -769,7 +769,7 @@ int main(void)
 				}
 			}
 			ms.send(10, ARM, sent_y /* regulation*/);
-			ms.send(2, ARM,  sent_z /* regulation*/);
+			ms.send(2, ARM,  -sent_z /* regulation*/);
 
 			if(coat_select > 0 && coat_changed == true){
 				led_mode = 2;
@@ -789,11 +789,11 @@ int main(void)
 
 			if(led_mode != priventeer){
 				sent_or_not = false;
-				led_mode = priventeer;
+				priventeer = led_mode;
 			}
 
-			if(sent_or_not != true){
-				switch(led_mode){
+			if(sent_or_not == false){
+			/*	switch(led_mode){
 					case 1:
 						ms.send(84,10,data);
 						break;
@@ -833,7 +833,10 @@ int main(void)
 					case 13:
 						ms.send(84,200,data);
 						break;
-				}
+				}*/
+				//ms.send(84,led_mode * 10,data);
+				//ms.send(84,led_mode * 10,data);
+				ms.send(84,led_mode * 10,data);
 				sent_or_not = true;
 				std::cout << led_mode << std::endl;
 			}

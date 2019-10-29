@@ -8,7 +8,7 @@ using namespace std;
 using namespace RPGY521;
 
 GY521::GY521() {
-  while (init(0x68, 2, 5000, 1.0) == 0) {
+  while (init(0x68, 2, 1000, 1.0) == 0) {
   };
 }
 

@@ -21,6 +21,7 @@ int main(int argc, char *argv[]) {
   }
   unsigned char id, cmd;
   unsigned short data;
+  int num;
   if (argc < 4) {
     id = 1;
     cmd = 2;
@@ -30,9 +31,13 @@ int main(int argc, char *argv[]) {
     cmd = (unsigned char)stoi(argv[2]);
     data = (short)stoi(argv[3]);
   }
+
+  cin >> num;
   cout << (int)id << " " << (int)cmd << " " << (int)data << endl;
   try {
-    cout << ms.send(id, cmd, data) << endl; // 同期モードで通信
+    for(int i = 1 ; i <=  num ; ++i){
+    	cout << ms.send(id, cmd, data) << endl; // 同期モードで通信
+    }
   } catch (runtime_error exception) {
     cout << "Communication Error." << endl;
     return -1;
