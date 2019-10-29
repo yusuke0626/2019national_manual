@@ -449,6 +449,7 @@ int main(void)
 		}
 
 		if(triangle_on == true){
+			towel_arm_status = 1;
 			if(box_permission == true){
 				box_now = std::chrono::steady_clock::now();
 				box_wait_time = std::chrono::duration_cast<std::chrono::milliseconds>(box_now - box_start);
@@ -471,16 +472,11 @@ int main(void)
 		}else{
 			ms.send(TOP_MDD,SOLENOID_PORT,0);
 		}
-
-
-
-
 		ms.send(TOP_MDD, ARM_PORT, sent_y * regulation);
 		ms.send(UP_MDD, ARM_PORT,  sent_z * regulation);
-
 	}
 	gpioWrite(RUNLED,false);
 	gpioWrite(SLEEPLED,false);
 	ms.send(255,255,0);
 	return 0;
-	}
+}
