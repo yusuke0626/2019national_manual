@@ -173,7 +173,34 @@ int main(void)
 		ds3.button(R1) ? regulation = 0.5 : regulation = 1;
 
 		double gyro_rad = gyro.yaw * M_PI / 180;
-		double rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.8;
+
+        double fronteer;
+        bool   chuner = false;
+        double start_gap;
+        double pid_count;
+        double gap;
+
+        if(ds3.button(UP)){
+            start_gap = gyro.yaw;
+            chuner = true;
+            pid_count = 0;
+            gap = 0;
+        }
+
+        if(chuner == true){
+            if(gyro.yaw <= 0.5 || gyro.yaw >= -0.5){
+                chuner = false;
+                fronteer = 0;
+                pid_count = 0;
+                gap = 0;
+            }else{
+                ++pid_count;
+                gap = gap + start_gap / pid_count;
+                fronteer = 0.5 * (gyro.yaw) + gap;
+            }
+        }
+
+        double rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.8 + fronteer;
 
 		wheel_velocity[0] = -std::sin(M_PI/4 + gyro_rad) * left_x + std::cos(M_PI/4 + gyro_rad) * left_y + rotation;
 		wheel_velocity[1] = -std::cos(M_PI/4 + gyro_rad) * left_x + -std::sin(M_PI/4 + gyro_rad) * left_y + rotation;
