@@ -165,7 +165,7 @@ int main(void)
 		double left_x = ds3.stick(LEFT_X);
 		double left_y = ds3.stick(LEFT_Y);
 		std::array<double, 4> wheel_velocity;
-		auto gyro_fixing = std::chrono::steady_clock::now();
+		//auto gyro_fixing = std::chrono::steady_clock::now();
 
 		if (ds3.button(SELECT) && ds3.press(LEFT))
 		{
@@ -176,10 +176,48 @@ int main(void)
 		ds3.button(R1) ? regulation = 0.5 : regulation = 1;
 
 		double gyro_rad = gyro.yaw * M_PI / 180;
-		double rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.8;
+		double rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.8;		
 		static double gyro_pre_value = 0;
 
-		if(std::fabs(rotation) > 0){
+		static bool front = false;
+		static bool right = false;
+		static bool left  = false;
+		static bool back  = false;
+
+		if(ds3.press(UP)){
+			front == true ? front = false : front = true;
+		}else if(ds3.press(RIGHT)){
+			right == true ? right = false : right = true;
+		}else if(ds3.press(LEFT)){
+			left  == true ? left  = false : left  = true;
+		}else if(ds3.press(DOWN)){
+			back  = true ? back   = false : back  = true;
+		}
+
+		if(front == true){
+			rotation = rotation + 20 * (1.05 / 1 + std::exp((-7.5 * (gyro.yaw / 180)) + 3)) - 0.03 ;
+			if(gyro.yaw < 1 && gyro.yaw > -1){
+				front = false;
+
+			}
+		}else if(right == true){
+			rotation = rotation + 20 * (1.05 / 1 + std::exp((-7.5 * ((gyro.yaw - 90) / 180)) + 3)) - 0.03 ;
+			if(gyro.yaw < 90.5 && gyro.yaw > 89.5){
+				front = false;
+			}
+		}else if(left == true){
+			rotation = rotation + 20 * (1.05 / 1 + std::exp((-7.5 * ((gyro.yaw + 90)/ 180)) + 3)) - 0.03 ;
+			if(gyro.yaw < -89.5 && gyro.yaw > -90.5){
+				front = false;
+			}
+		}else if(back == true){
+			rotation = rotation + 20 * (1.05 / 1 + std::exp((-7.5 * ((gyro.yaw - 180)/ 180)) + 3)) - 0.03 ;
+			if(gyro.yaw < 1 && gyro.yaw > -1){
+				front = false;
+			}
+		}
+
+		if(std::fabs(rotation) > 0.5){
 			gyro_pre_value = gyro.yaw;
 			//gyro_correct_wait = std::chrono::steady_clock::now();
 		}
@@ -191,30 +229,10 @@ int main(void)
 		wheel_velocity[2] = std::sin(M_PI/4 + gyro_rad) * left_x + -std::cos(M_PI/4 + gyro_rad) * left_y + rotation -  correct_rotation;
 		wheel_velocity[3] = std::cos(M_PI/4 + gyro_rad) * left_x + std::sin(M_PI/4 + gyro_rad) * left_y + rotation - correct_rotation;
 
-		static bool front = false;
-		static bool right = false;
-		static bool left  = false;
-
-
-		/*if(ds3.press(UP)){
-			front == true ? front = false: front = true;
-		}//else if(ds3.press(RIGHT)){*/
-
-
-
-		if(front == true){
-			rotation = rotation + 80 * (1.05 / 1 + std::exp((-7.5 * gyro_rad) + 3)) - 0.04 ;
-			if(gyro.yaw < 1 && gyro.yaw > -1){
-				front = false;
-			}
-		}
-
-		//if(rotation == 0){
-
-		ms.send(BOTTOM_MDD, UNC_PORT , -wheel_velocity[1] * 0.8 * regulation + rotation * 1.2);
-		ms.send(DOWN_MDD,   UNC_PORT , -wheel_velocity[2] * 0.8 * regulation + rotation * 1.2);
-		ms.send(UP_MDD,     UNC_PORT  , -wheel_velocity[0] * 0.8 * regulation + rotation * 1.2);
-		ms.send(TOP_MDD,    UNC_PORT , -wheel_velocity[3] * 0.8 * regulation + rotation * 1.2);
+		ms.send(BOTTOM_MDD, UNC_PORT , -wheel_velocity[1] * 0.8 * regulation);
+		ms.send(DOWN_MDD,   UNC_PORT , -wheel_velocity[2] * 0.8 * regulation);
+		ms.send(UP_MDD,     UNC_PORT , -wheel_velocity[0] * 0.8 * regulation);
+		ms.send(TOP_MDD,    UNC_PORT , -wheel_velocity[3] * 0.8 * regulation);
 
 
 		//-----------------------------hanger------------------------------------------------//
@@ -280,28 +298,6 @@ int main(void)
 
 		if (right_distance >= 20)
 		{
-			/*if (right_theta >= (M_PI / 4) && right_theta <= (M_PI / 4) * 3)
-			  {
-			  sent_y = 0;
-			  z_top_limit == false ? sent_z = -right_y * 1.8 : sent_z = 0;
-			  }
-			  else if (right_theta > (M_PI / 4) * 3 || right_theta < -(M_PI / 4) * 3)
-			  {
-			  sent_z = 0;
-			  y_front_limit == false ? sent_y = right_x * 1.8 : sent_y = 0;
-			  }
-			  else if (right_theta >= -(M_PI / 4) * 3 && right_theta <= -(M_PI / 4))
-			  {
-			  sent_y = 0;
-			  z_bottom_limit == true ? sent_z = -right_y * 1.8 : sent_z = 0;
-			  }
-			  else if (right_theta > -(M_PI / 4) && right_theta < (M_PI / 4))
-			  {
-			  sent_z = 0;
-			  y_back_limit == false ? sent_y = right_x * 1.8 : sent_y = 0;
-			  }*/
-			//(y_front_limit == true && right_x * coat_flag < 0)
-			//
 			sent_y = right_x * 1.8 * coat_select;
 			sent_z = right_y * 1.8;
 
