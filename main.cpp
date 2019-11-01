@@ -48,6 +48,8 @@ int main(void)
 	constexpr int Y_ARM_PWM = 250;
 	constexpr int Z_ARM_PWM = 200;
 
+	constexpr bool final_mode = false; 
+
 	ds3.update();
 	try
 	{
@@ -458,7 +460,7 @@ int main(void)
 
 		if(triangle_on == true){
 			towel_arm_status = 1;
-			if(box_permission == true){
+			if(box_permission == true || final_mode == true){
 				box_now = std::chrono::steady_clock::now();
 				box_wait_time = std::chrono::duration_cast<std::chrono::milliseconds>(box_now - box_start);
 				box_time = box_wait_time.count();
@@ -476,6 +478,8 @@ int main(void)
 					triangle_on = false;
 				}
 
+			}else if(limit_uneffect == true){
+				ms.send(TOP_MDD,SOLENOID_PORT,251);
 			}
 		}else{
 			ms.send(TOP_MDD,SOLENOID_PORT,0);
