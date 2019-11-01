@@ -203,17 +203,17 @@ int main(void)
 		}else if(right == true){
 			rotation = rotation + 20 * (1.05 / 1 + std::exp((-7.5 * ((gyro.yaw - 90) / 180)) + 3)) - 0.03 ;
 			if(gyro.yaw < 90.5 && gyro.yaw > 89.5){
-				front = false;
+				right = false;
 			}
 		}else if(left == true){
 			rotation = rotation + 20 * (1.05 / 1 + std::exp((-7.5 * ((gyro.yaw + 90)/ 180)) + 3)) - 0.03 ;
 			if(gyro.yaw < -89.5 && gyro.yaw > -90.5){
-				front = false;
+				left = false;
 			}
 		}else if(back == true){
 			rotation = rotation + 20 * (1.05 / 1 + std::exp((-7.5 * ((gyro.yaw - 180)/ 180)) + 3)) - 0.03 ;
 			if(gyro.yaw < 1 && gyro.yaw > -1){
-				front = false;
+				back = false;
 			}
 		}
 
