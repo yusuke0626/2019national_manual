@@ -179,12 +179,15 @@ int main(void)
         double start_gap;
         double pid_count;
         double gap;
+        double now_gap;
+        double privent_gap;
 
         if(ds3.button(UP)){
             start_gap = gyro.yaw;
             chuner = true;
             pid_count = 0;
-            gap = 0;
+            now_gap = 0;
+            privent_gap = 0;
         }
 
         if(chuner == true){
@@ -193,10 +196,13 @@ int main(void)
                 fronteer = 0;
                 pid_count = 0;
                 gap = 0;
+                now_gap = 0;
             }else{
                 ++pid_count;
-                gap = gap + start_gap / pid_count;
-                fronteer = 0.5 * (gyro.yaw) + gap;
+                gap = gap + privent_gap;
+                now_gap = gyro_yaw;
+                fronteer = 0.5 * (now_gap) + gap * 0.5 + 0.5  *(now_gap - privent_gap);
+                privent_gap = now_gap;
             }
         }
 
