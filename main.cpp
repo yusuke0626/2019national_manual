@@ -215,17 +215,17 @@ int main(void)
 		}
 
         if(front == true){
-            rotation = rotation + 50;
+            rotation = rotation + std:sin(gyro.yaw / 180);
             gyro.yaw < 1 && gyro.yaw > -1  ? front = false : front = true;
         }else if(right == true){
-            rotation = roation + 50;
+            rotation = rotation + std::sin((gyro.yaw + 90) / 180);
             gyro.yaw < 91 && gyro.yaw > 89 ? right = false : right = true;
         }else if(left == true){
-            rotation = roation + 50;
-            gyro.yaw < 91 && gyro.yaw > 89 ? left  = false : left = true;
+            rotation = rotation + std::sin((gyro.yaw - 90) / 180);
+            gyro.yaw < -89 && gyro.yaw > -91 ? left  = false : left = true;
         }else if(right == true){
-            rotation = roation + 50;
-            gyro.yaw < 91 && gyro.yaw > 89 ? back  = false : back = true;
+            rotation = rotation + std::sin((gyro.yaw -180) / 180);
+            gyro.yaw < -179 || gyro.yaw > 179 ? back  = false : back = true;
         }
 
         if(std::fabs(rotation) > 0){
