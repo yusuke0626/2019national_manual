@@ -178,7 +178,7 @@ int main(void)
 		ds3.button(R1) ? regulation = 0.5 : regulation = 1;
 
 		double gyro_rad = gyro.yaw * M_PI / 180;
-		double rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.8;		
+		double rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.8;
 		static double gyro_pre_value = 0;
 
 		static bool front = false;
@@ -197,17 +197,31 @@ int main(void)
 		if(!ds3.button(SELECT)){
 			if(ds3.press(UP)){
 				front == true ? front = false : front = true;
+                right = false;
+                left  = false;
+                back  = false;
 			}else if(ds3.press(RIGHT)){
 				right == true ? right = false : right = true;
+                front = false;
+                left  = false;
+                back  = false;
+
 			}else if(ds3.press(LEFT)){
 				left  == true ? left  = false : left  = true;
+                front = false;
+                right = false;
+                back  = false;
+
 			}else if(ds3.press(DOWN)){
 				back  == true ? back  = false : back  = true;
+                front = false;
+                right = false;
+                left  = false;
 			}
 		}
 
 		if(front == true){
-			rotation = rotation + 100 * (1.05 / (1 + std::exp((-7.5 * (gyro.yaw / 180)) + 3))) - 0.03 ;
+			rotation = rotation + 50 * (gyro.yaw / 180);
 			if(gyro.yaw < 1 && gyro.yaw > -1){
 				front = false;
 				correct_rock = false;
@@ -215,7 +229,7 @@ int main(void)
 				correct_rock = true;
 			}
 		}else if(right == true){
-			rotation = rotation + 100 * (1.05 / (1 + std::exp((-7.5 * ((gyro.yaw + 90) / 180))) + 3)) - 0.03 ;
+			rotation = rotation + 50 * ((gyro.yaw - 90)/ 180);
 			if(gyro.yaw < 91 && gyro.yaw > 89){
 				right = false;
 				correct_rock = false;
@@ -223,7 +237,7 @@ int main(void)
 				correct_rock = true;
 			}
 		}else if(left == true){
-			rotation = rotation + 100 * (1.05 / (1 + std::exp((-7.5 * ((gyro.yaw - 90)/ 180))) + 3)) - 0.03 ;
+			rotation = rotation + 50 * ((gyro.yaw + 90)/ 180);
 			if(gyro.yaw < -89 && gyro.yaw > -91){
 				left = false;
 				correct_rock = false;
@@ -231,14 +245,20 @@ int main(void)
 				correct_rock = true;
 			}
 		}else if(back == true){
-			rotation = rotation + 100 * (1.05 / (1 + std::exp((-7.5 * ((gyro.yaw - 180)/ 180))) + 3)) - 0.03 ;
+			rotation = rotation + 50 * ((gyro.yaw + 180)/ 180);
 			if(gyro.yaw < 1 && gyro.yaw > -1){
 				back = false;
 				correct_rock = false;
 			}else{
 				correct_rock = true;
 			}
-		}
+		}else{
+            correct_rock = false;
+            front = false;
+            right = false;
+            left  = false;
+            back  = false;
+        }
 
 		std::cout << rotation << std::endl;
 		std::cout << correct_rotation << std::endl;
