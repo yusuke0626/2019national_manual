@@ -176,33 +176,34 @@ int main(void)
 
         double fronteer;
         bool   chuner = false;
-        double start_gap;
-        double pid_count;
+        //double start_gap;
+        /*double pid_count;
         double gap;
         double now_gap;
-        double privent_gap;
+        double privent_gap;*/
 
         if(ds3.button(UP)){
-            start_gap = gyro.yaw;
+            //start_gap = gyro.yaw;
             chuner = true;
-            pid_count = 0;
+            /*pid_count = 0;
             now_gap = 0;
-            privent_gap = 0;
+            privent_gap = 0;*/
         }
 
         if(chuner == true){
             if(gyro.yaw <= 0.5 || gyro.yaw >= -0.5){
                 chuner = false;
                 fronteer = 0;
-                pid_count = 0;
+                /*pid_count = 0;
                 gap = 0;
-                now_gap = 0;
+                now_gap = 0;*/
             }else{
-                ++pid_count;
+                /*++pid_count;
                 gap = gap + privent_gap;
-                now_gap = gyro_yaw;
-                fronteer = 0.5 * (now_gap) + gap * 0.5 + 0.5  *(now_gap - privent_gap);
-                privent_gap = now_gap;
+                now_gap = gyro_yaw;*/
+                //fronteer = 0.5 * (now_gap) + gap * 0.5 + 0.5  *(now_gap - privent_gap);
+                fronteer = gyro.yaw * 0.5;
+                //privent_gap = now_gap;
             }
         }
 
