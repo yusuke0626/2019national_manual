@@ -28,14 +28,15 @@ int main(void)
 	//constexpr int TAPE_LED = 12;
 
 	//-----PORT------//
-	constexpr int RIGHT_MOTOR = ;
-	constexpr int LEFT_MOTOR  = ;
-	constexpr int BACK_MOTOR  = ;
-	constexpr int RIGHT_TOWEL = ;
-	constexpr int LEFT_TOWEL  = ;
-	constexpr int HANGER      = ;
-	constexpr int ZARM        = ;
-	constexpr int YARM        = ;
+	constexpr int RIGHT_MOTOR = 3;
+	constexpr int LEFT_MOTOR  = 2;
+	constexpr int BACK_MOTOR  = 3;
+	constexpr int RIGHT_TOWEL = 3;
+	constexpr int LEFT_TOWEL  = 4;
+	constexpr int HANGER_RAISE= 2;
+    constexpr int HANGER_HOLD = 2;
+	constexpr int ZARM        = 4;
+	constexpr int YARM        = 3;
 
 	//constexpr int TAPELED = 84;
 
@@ -44,8 +45,8 @@ int main(void)
 	constexpr int LEFT_TOP_LIMIT = 11;//11
 	constexpr int LEFT_BOTTOM_LIMIT = 22;//22
 
-	constexpr int Y_FRONT_LIMIT = 26;
-	constexpr int Y_BACK_LIMIT = 19;
+	//constexpr int Y_FRONT_LIMIT = 26;
+	//constexpr int Y_BACK_LIMIT = 19;
 	constexpr int Z_TOP_LIMIT = 9;
 	constexpr int Z_BOTTOM_LIMIT = 10;
 
@@ -53,7 +54,7 @@ int main(void)
 	constexpr int Y_ARM_PWM = 250;
 	constexpr int Z_ARM_PWM = 200;
 
-	constexpr bool final_mode = false; 
+	constexpr bool final_mode = false;
 
 	ds3.update();
 	try
@@ -247,9 +248,9 @@ int main(void)
 		wheel_velocity[1] = std::cos(gyro_rad + M_PI * 2/3) + std::sin(gyro_rad + M_PI * 2/3) -rotation;
 		wheel_velocity[2] = std::cos(gyro_rad - M_PI * 2/3) + std::sin(gyro_rad - M_PI * 2/3) -rotation;
 
-		ms.send(BOTTOM_MDD, UNC_PORT , -wheel_velocity[1] * 0.8 * regulation);
-		ms.send(DOWN_MDD,   UNC_PORT , -wheel_velocity[2] * 0.8 * regulation);
-		ms.send(UP_MDD,     UNC_PORT , -wheel_velocity[0] * 0.8 * regulation);
+		ms.send(LEFT_DOWN, LEFT_MOTOR, -wheel_velocity[1] * 0.8 * regulation);
+		ms.send(LEFT_UP,   LEFT_UP,    -wheel_velocity[2] * 0.8 * regulation);
+		ms.send(LEFT_DOWN, BACK_MOTOR, -wheel_velocity[0] * 0.8 * regulation);
 
 		//-----------------------------hanger------------------------------------------------//
 
@@ -259,8 +260,8 @@ int main(void)
 			if (hanger_flag == true)
 			{
 				std::cout << "hanger" << std::endl;
-				ms.send(UP_MDD, SOLENOID_PORT, 251);
-				ms.send(UP_MDD, SOLENOID_PORT, 252);
+				ms.send(RIGHT_UP, HANGER_RAISE, 251);
+				ms.send(RIGHT_UP, HANGER_RAISE, 252);
 				tape_led_mode = 6;
 			}
 			else
@@ -276,21 +277,22 @@ int main(void)
 			((limit_uneffect = true) ? limit_uneffect = false : limit_uneffect = true);
 		}
 		//-----------------------------arm-------------------------------------------------//
-		bool y_front_limit = false;
-		bool y_back_limit = false;
+		//bool y_front_limit = false;
+		//bool y_back_limit = false;
 		bool z_top_limit = false;
 		bool z_bottom_limit = false;
 		bool right_top_limit = false;
 		bool right_bottom_limit = false;
 		bool left_top_limit = false;
 		bool left_bottom_limit = false;
+        int potentiometer = ms.send(RIGHT_DOWN,4,40);
 
 		static bool recover = false;
 
 		if (limit_uneffect == false)
 		{
-			y_front_limit = gpioRead(Y_FRONT_LIMIT);
-			y_back_limit = gpioRead(Y_BACK_LIMIT);
+			//y_front_limit = gpioRead(Y_FRONT_LIMIT);
+			//y_back_limit = gpioRead(Y_BACK_LIMIT);
 			z_top_limit = gpioRead(Z_TOP_LIMIT);
 			z_bottom_limit = gpioRead(Z_BOTTOM_LIMIT);
 			right_top_limit = gpioRead(RIGHT_TOP_LIMIT);
@@ -316,11 +318,11 @@ int main(void)
 			sent_y = right_x * 1.8 * coat_select;
 			sent_z = right_y * 1.8;
 
-			if(y_back_limit  == true && right_x > 0){
+			if(potentiometer < 50){
 				sent_y = 0;
 			}else if(z_bottom_limit == true && right_y > 0){
 				sent_z = 0;
-			}else if(y_front_limit == true && right_x < 0){
+			}else if(potentiometer > 500){
 				sent_y = 0;
 			}else if(z_top_limit == true && right_y < 0){
 				sent_z = 0;
@@ -351,7 +353,7 @@ int main(void)
 						break;
 					case 1:
 						sent_y = Y_ARM_PWM;
-						if (y_back_limit == true)
+						if (potentiometer < 50)
 						{
 							sent_y = 0;
 							arm_status = 2;
@@ -375,7 +377,7 @@ int main(void)
 						y_pull_now = std::chrono::steady_clock::now();
 						sent_y = -Y_ARM_PWM;
 						auto y_pull_time = std::chrono::duration_cast<std::chrono::milliseconds>(y_pull_start - y_pull_now);
-						if (y_front_limit == true || y_pull_time.count() > 2500)
+						if (potentiometer < 50 || y_pull_time.count() > 2500)
 						{
 							sent_y = 0;
 							recover = false;
@@ -468,7 +470,7 @@ int main(void)
 				std::cout << box_time << std::endl;
 				z_bottom_limit == false ? sent_z = 180 : sent_z = 0;
 				if(box_time < 300){
-					y_back_limit == false ? sent_y = 180 : sent_y = 0;
+					potentiometer < 50 ? sent_y = 180 : sent_y = 0;
 					//z_bottom_limit == false ? sent_z = 180 : sent_z = 0;
 				}else if(box_time < 600){
 					ms.send(TOP_MDD,SOLENOID_PORT,251);
