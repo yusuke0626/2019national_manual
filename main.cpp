@@ -128,6 +128,10 @@ int main(void)
 	gyro.start();
 	ds3.yReverseSet(true);
 
+
+	double now_rotation_vel  = 0;
+	double prev_rotation_vel = 0;
+	
 	while (!(ds3.button(START) && ds3.button(RIGHT)))
 	{
 		/*std::cout << "rt" << gpioRead(RIGHT_TOP_LIMIT) << std::endl;
@@ -181,54 +185,84 @@ int main(void)
 
 		ds3.button(R1) ? regulation = 0.5 : regulation = 1;
 
+		static double dest_angle = 0;
 		double now_angle = gyro.yaw;
 		double gyro_rad = now_angle * M_PI / 180;
 		double user_rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.8;
-		
-		static double integral  = 0 
-		static double differential = 0;
-		static double dist_angle = 0;
-		
-		double diff_dest = dist_angle - now_angle;
-		integral = integral + diff_dest;
-	       	differential = diff_dest - prev_diff_dest;
 
-		prev_diff_dest = diff_dest;	
+		prev_rotation_vel = now_rotation_vel;		
+		static double integral     = 0; 
+		static double differential = 0;
+
+		double diff_dest = dest_angle - now_angle;//目標角度との差をdiff_destに格納
+		integral = integral + diff_dest; //目標角度との差を蓄積（積分操作）
+	    differential = diff_dest - prev_diff_dest;//前回ループ時のの目標角度の差と現在の目標角度との差の変化
+		double prev_diff_dest = diff_dest;	//今回の目標角度との差を次回ループ時の過去の値として利用できるように保存
 		
-		if(std::fabs(user_rotation) > 0){
-			gyro_pre_value = now_angle;
-			integral = 0;
+		static bool front = false;
+		static bool right = false;
+		static bool left  = false;
+
+		if(std::fabs(user_rotation) > 0){//もしもL2R2が押されたら目標角度を現在の角度にする
+			dest_angle = now_angle;
+			front = false;
+			right = false;
+			left  = false;
+			integral = 0;//誤差蓄積リセット
+			differential = 0;//変化率リセット
 		}
 
+		constexpr double Kp = 21.0;//p係数
+		constexpr double Ki = 36.0 / 0.3;//i係数
+		constexpr double Kd = 0.075 * 30.0 * 0.3;//d係数
 
-		constexpr double kp = 21.0;
-		constexpr double ki = 36.0 / 0.3;
-		constexpr double kd = 0.075 * 30.0 * 0.3;
-				
-
-		std::cout << kp * p_correct_rotation << std::endl;
-
-		rotation = rotation + kp*p_correct_rotation - ki*i_correct_rotation;
-		prev_rotation - rotation
-		//double prev_correct = rotation;
- 	       
-		if(rotation > 100){
-			rotation = 100;
-		}else if(rotation < -100){
-			rotation = -100;
+		now_rotation_vel = Kp * diff_dest + Ki * integral - Kd * differential; 
+		double rotation_velocity = now_rotation_vel + prev_rotation_vel;
+		if(rotation_velocity > 100){
+			rotation_velocity = 100;
+		}else if(rotation_velocity < -100){
+			rotation_velocity = -100;
 		}	//+ i_correct_rotation;
+		
+		
 
-		/*if(rotation < -250){
-			rotation = -250;
-		}else if(rotation > 250){
-			rotation = 250;
-		}*/
-		//std::cout << rotation << std::endl;
-		//std::cout << correct_rotation << std::endl;
+		if(!ds3.button(SELECT)){
+			if(ds3.press(UP)){
+				front == true ? front = false : front = true;
+				right = false;
+				left  = false;
+				back  = false;
+			}else if(ds3.press(RIGHT)){
+				right == true ? right = false : right = true;
+				front = false;
+				left  = false;
+				back  = false;
 
-		wheel_velocity[1] = std::cos(gyro_rad) * left_x + std::sin(gyro_rad) * left_y -rotation;
-		wheel_velocity[2] = std::cos(gyro_rad + M_PI * 2/3) * left_x + std::sin(gyro_rad + M_PI * 2/3) * left_y -rotation;
-		wheel_velocity[0] = std::cos(gyro_rad - M_PI * 2/3) * left_x + std::sin(gyro_rad - M_PI * 2/3) * left_y -rotation;
+			}else if(ds3.press(LEFT)){
+				left  == true ? left  = false : left  = true;
+				front = false;
+				right = false;
+				back  = false;
+
+			}/*else if(ds3.press(DOWN)){
+				back  == true ? back  = false : back  = true;
+				front = false;
+				right = false;
+				left  = false;
+			}*/
+		}
+
+		if(front == true){
+			dest_angle = 0;
+		}else if(right == true){
+			dest_angle = 90;
+		}else if(left == true){
+			dest_angle = -90;
+		}
+
+		wheel_velocity[1] = std::cos(gyro_rad) * left_x + std::sin(gyro_rad) * left_y -rotation_velocity;
+		wheel_velocity[2] = std::cos(gyro_rad + M_PI * 2/3) * left_x + std::sin(gyro_rad + M_PI * 2/3) * left_y -rotation_velocity;
+		wheel_velocity[0] = std::cos(gyro_rad - M_PI * 2/3) * left_x + std::sin(gyro_rad - M_PI * 2/3) * left_y -rotation_velocity;
 
 		if(wheel_velocity[1] < -250){
 			wheel_velocity[1] = -250;
