@@ -214,31 +214,32 @@ int main(void)
 		static bool front = false;
 		static bool right = false;
 		static bool left  = false;
+        static bool back  = false;
 
 		if(!ds3.button(SELECT)){
 			if(ds3.press(UP)){
 				front == true ? front = false : front = true;
 				right = false;
 				left  = false;
-		//		back  = false;
+				back  = false;
 			}else if(ds3.press(RIGHT)){
 				right == true ? right = false : right = true;
 				front = false;
 				left  = false;
-		//		back  = false;
+				back  = false;
 
 			}else if(ds3.press(LEFT)){
 				left  == true ? left  = false : left  = true;
 				front = false;
 				right = false;
-		//		back  = false;
+				back  = false;
 
-			}/*else if(ds3.press(DOWN)){
+			}else if(ds3.press(DOWN)){
 				back  == true ? back  = false : back  = true;
 				front = false;
 				right = false;
 				left  = false;
-			}*/
+			}
 		}
 
 		if(front == true){
@@ -247,7 +248,9 @@ int main(void)
 			dest_angle = -90;
 		}else if(left == true){
 			dest_angle = 90;
-		}
+		}else{
+            dest_angle = 180;
+        }
 		/*if(std::fabs(user_rotation) > 0){//もしもL2R2が押されたら目標角度を現在の角度にする
 			dest_angle = now_angle;
 			front = false;
