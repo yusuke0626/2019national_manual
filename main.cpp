@@ -210,11 +210,11 @@ int main(void)
         integral = integral + diff_dest; //目標角度との差を蓄積（積分操作）
 	    differential = diff_dest - prev_diff_dest;//前回ループ時のの目標角度の差と現在の目標角度との差の変化
 		prev_diff_dest = diff_dest;	//今回の目標角度との差を次回ループ時の過去の値として利用できるように保存
-		
+
 		static bool front = false;
 		static bool right = false;
 		static bool left  = false;
-		
+
 		if(!ds3.button(SELECT)){
 			if(ds3.press(UP)){
 				front == true ? front = false : front = true;
@@ -285,9 +285,9 @@ int main(void)
 		//std::cout <<"gyro_dest "<<dest_angle << std::endl; 	//+ i_correct_rotation;
 	//	std::cout << move << std::endl;
 
-		wheel_velocity[1] = std::cos(gyro_rad) * left_x + std::sin(gyro_rad) * left_y +move/*rotation_velocity*/;
-		wheel_velocity[2] = std::cos(gyro_rad + M_PI * 2/3) * left_x + std::sin(gyro_rad + M_PI * 2/3) * left_y +/*rotation_velocity*/move;
-		wheel_velocity[0] = std::cos(gyro_rad - M_PI * 2/3) * left_x + std::sin(gyro_rad - M_PI * 2/3) * left_y +/*rotation_velocity*/move;
+		wheel_velocity[1] = std::cos(gyro_rad) * left_x + std::sin(gyro_rad) * left_y + now_rotation_vel/*move*//*rotation_velocity*/;
+		wheel_velocity[2] = std::cos(gyro_rad + M_PI * 2/3) * left_x + std::sin(gyro_rad + M_PI * 2/3) * left_y + now_rotation_vel;/*rotation_velocity*///move;
+		wheel_velocity[0] = std::cos(gyro_rad - M_PI * 2/3) * left_x + std::sin(gyro_rad - M_PI * 2/3) * left_y + now_rotation_vel;/*rotation_velocity*///move;
 
 		if(wheel_velocity[1] < -250){
 			wheel_velocity[1] = -250;
