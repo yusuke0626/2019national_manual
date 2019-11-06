@@ -196,11 +196,12 @@ int main(void)
 		double gyro_rad = now_angle * M_PI / 180;
 		double user_rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.8;
 
-		prev_rotation_vel = now_rotation_vel;		
+		prev_rotation_vel = now_rotation_vel;
 		static double integral     = 0; 
 		static double differential = 0;
 
-		double diff_dest = dest_angle - now_angle;//目標角度との差をdiff_destに格納
+		double diff_dest = dest_angle - now_angle;
+        diff_dest = diff_dest - (int)diff_dest / 180 * 360;//目標角度との差をdiff_destに格納
 		integral = integral + diff_dest; //目標角度との差を蓄積（積分操作）
 	    	differential = diff_dest - prev_diff_dest;//前回ループ時のの目標角度の差と現在の目標角度との差の変化
 		prev_diff_dest = diff_dest;	//今回の目標角度との差を次回ループ時の過去の値として利用できるように保存
