@@ -201,9 +201,14 @@ int main(void)
 		static double differential = 0;
 
 		double diff_dest = dest_angle - now_angle;
-        diff_dest = diff_dest - (int)diff_dest / 180 * 360;//目標角度との差をdiff_destに格納
-		integral = integral + diff_dest; //目標角度との差を蓄積（積分操作）
-	    	differential = diff_dest - prev_diff_dest;//前回ループ時のの目標角度の差と現在の目標角度との差の変化
+        //diff_dest = diff_dest - (int)diff_dest / 180 * 360;//目標角度との差をdiff_destに格納
+		if(diff_dest > 345 ){
+            diff_dest = diff_dest - 360;
+        }else if(diff_dest < -345){
+            diff_dest = diff_dest + 360;
+        }
+        integral = integral + diff_dest; //目標角度との差を蓄積（積分操作）
+	    differential = diff_dest - prev_diff_dest;//前回ループ時のの目標角度の差と現在の目標角度との差の変化
 		prev_diff_dest = diff_dest;	//今回の目標角度との差を次回ループ時の過去の値として利用できるように保存
 		
 		static bool front = false;
