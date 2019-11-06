@@ -24,6 +24,8 @@ public:
   GY521(int dev, int bit, int calibration, double userReg);
   double yaw;
   double diffYaw;
+  double omega;
+  double diff_omega;
   void updata();
   void resetYaw(double reset) { yaw = reset; }
   void start() {
@@ -42,6 +44,8 @@ private:
   unsigned int i2cFlag;
   double gyroZAver;
   double gyroLSB;
+  double diff_time;
+  double prev_omega;
   struct timespec now, prev;
 
   bool init(int dev, int bit, int calibration, double userReg);

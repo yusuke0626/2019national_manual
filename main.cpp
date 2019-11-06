@@ -131,10 +131,7 @@ int main(void)
 
 	double now_rotation_vel  = 0;
 	double prev_rotation_vel = 0;
-	double prev_diff_dest = 0;
-	double rotation_velocity = 0;
-	double prev_rotation_velocity = 0;
-	
+
 	while (!(ds3.button(START) && ds3.button(RIGHT)))
 	{
 		/*std::cout << "rt" << gpioRead(RIGHT_TOP_LIMIT) << std::endl;
@@ -197,19 +194,10 @@ int main(void)
 		double user_rotation = (ds3.stick(RIGHT_T) - ds3.stick(LEFT_T)) * 0.8;
 
 		prev_rotation_vel = now_rotation_vel;
-		static double integral     = 0; 
-		static double differential = 0;
 
 		double diff_dest = dest_angle - now_angle;
-        //diff_dest = diff_dest - (int)diff_dest / 180 * 360;//目標角度との差をdiff_destに格納
-		if(diff_dest > 345 ){
-            diff_dest = diff_dest - 360;
-        }else if(diff_dest < -345){
-            diff_dest = diff_dest + 360;
-        }
-        integral = integral + diff_dest; //目標角度との差を蓄積（積分操作）
-	    differential = diff_dest - prev_diff_dest;//前回ループ時のの目標角度の差と現在の目標角度との差の変化
-		prev_diff_dest = diff_dest;	//今回の目標角度との差を次回ループ時の過去の値として利用できるように保存
+        diff_dest = diff_dest - (int)diff_dest / 180 * 360;//目標角度との差をdiff_destに格納
+	    prev_diff_dest = diff_dest;	//今回の目標角度との差を次回ループ時の過去の値として利用できるように保存
 
 		static bool front = false;
 		static bool right = false;
@@ -264,11 +252,12 @@ int main(void)
 		constexpr double Ki = 6;//36.0 / 0.3;//i係数
 		constexpr double Kd = 0.0075 * 8;//0.075 * 30.0 * 0.3;//d係数
 
-		now_rotation_vel = Kp * diff_dest + Ki * integral + Kd * differential;	
-		rotation_velocity = now_rotation_vel - prev_rotation_vel;
+		now_rotation_vel = Kp * gyro.omega + Ki * diff_dest + Kd * gyro.diff_omega;
+		double move_velocity = now_rotation_vel + prev_rotation_vel;
+        prev_rotation_vel = now_rotation_vel;
 		// - user_rotation;
 
-		double move = prev_rotation_velocity + rotation_velocity - user_rotation;
+		//double move = prev_rotation_velocity + rotation_velocity - user_rotation;
 		if(std::fabs(user_rotation) > 0){//もしもL2R2が押されたら目標角度を現在の角度にする
 			dest_angle = now_angle;
 			front = false;
@@ -278,19 +267,19 @@ int main(void)
 			differential = 0;//変化率リセット
 		}
 		
-		if(move > 100){
+		/*if(move > 100){
 			move = 100;
 		}else if(move < -100){
 			move = -100;
-		}
+		}*/
 	
 		//std::cout <<"prv"<<prev_rotation_vel<< std::endl;
 		//std::cout <<"gyro_dest "<<dest_angle << std::endl; 	//+ i_correct_rotation;
 	//	std::cout << move << std::endl;
 
-		wheel_velocity[1] = std::cos(gyro_rad) * left_x + std::sin(gyro_rad) * left_y + now_rotation_vel/*move*//*rotation_velocity*/;
-		wheel_velocity[2] = std::cos(gyro_rad + M_PI * 2/3) * left_x + std::sin(gyro_rad + M_PI * 2/3) * left_y + now_rotation_vel;/*rotation_velocity*///move;
-		wheel_velocity[0] = std::cos(gyro_rad - M_PI * 2/3) * left_x + std::sin(gyro_rad - M_PI * 2/3) * left_y + now_rotation_vel;/*rotation_velocity*///move;
+		wheel_velocity[1] = std::cos(gyro_rad) * left_x + std::sin(gyro_rad) * left_y + move_velocity;
+		wheel_velocity[2] = std::cos(gyro_rad + M_PI * 2/3) * left_x + std::sin(gyro_rad + M_PI * 2/3) * left_y + move_velocity;/*rotation_velocity*///move;
+		wheel_velocity[0] = std::cos(gyro_rad - M_PI * 2/3) * left_x + std::sin(gyro_rad - M_PI * 2/3) * left_y + move_velocity;/*rotation_velocity*///move;
 
 		if(wheel_velocity[1] < -250){
 			wheel_velocity[1] = -250;
