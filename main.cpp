@@ -484,12 +484,11 @@ int main(void)
 							arm_status = 0;
 						}
 						break;
-					case 4: 
+					case 4:
 						if(ds3.button(L1) && ds3.press(TRIANGLE)){
 							arm_status = 2;
 						}
 						break;
-					
 
 				}
 			}else if(recover_sheets){
@@ -546,7 +545,7 @@ int main(void)
 			}else if(recover_tshirt){
 				switch (arm_status)
 				{
-					case 0:
+					case 0://上がる
 						sent_z = Z_ARM_PWM;
 						if (z_bottom_limit == true)
 						{
@@ -554,17 +553,16 @@ int main(void)
 							arm_status = 1;
 						}
 						break;
-					case 1:
+					case 1://前行く
 						sent_y = -Y_ARM_PWM;
 						if (potentiometer > 500)
 						{
 							sent_y = 0;
 							arm_status = 4;
-							z_fall_start = std::chrono::steady_clock::now();
 						}
 						break;
 
-					case 2:
+					case 2://下がる
 						z_fall_now = std::chrono::steady_clock::now();
 						sent_z = -Z_ARM_PWM;
 						z_fall_time = std::chrono::duration_cast<std::chrono::milliseconds>(z_fall_start - z_fall_now);
@@ -576,7 +574,7 @@ int main(void)
 						}
 						break;
 
-					case 3:
+					case 3://引く
 						y_pull_now = std::chrono::steady_clock::now();
 						sent_y = Y_ARM_PWM;
 						y_pull_time = std::chrono::duration_cast<std::chrono::milliseconds>(y_pull_start - y_pull_now);
@@ -584,15 +582,60 @@ int main(void)
 						{
 							sent_y = 0;
 							recover_tshirt = false;
+							arm_status = 5;
+						}
+						break;
+					case 4://止まる
+						if(ds3.button(L1) && ds3.press(CROSS)){
+							arm_status = 2;
+						}else{
+							z_fall_start = std::chrono::steady_clock::now();
+                        }
+						break;
+                    case 5://上げる
+                        sent_z = Z_ARM_PWM;
+                        if (z_bottom_limit == true)
+						{
+							sent_z = 0;
+							arm_status = 6;
+						}
+						break;
+                    case 6://前
+                        sent_y = -Y_ARM_PWM;
+                        if (potentiometer > 500)
+						{
+							sent_y = 0;
+							arm_status = 7;
+						}
+						break;
+                    case 7://一旦停止
+                        if(ds3.button(L1) && ds3.press(CROSS)){
+							arm_status = 8;
+						}else{
+							z_fall_start = std::chrono::steady_clock::now();
+                        }
+                    case 8://下げる
+                        z_fall_now = std::chrono::steady_clock::now();
+						sent_z = -Z_ARM_PWM;
+						z_fall_time = std::chrono::duration_cast<std::chrono::milliseconds>(z_fall_start - z_fall_now);
+						if (z_top_limit == true || z_fall_time.count() > 1500)
+						{
+							sent_z = 0;
+							arm_status = 9;
+							y_pull_start = std::chrono::steady_clock::now();
+						}
+						break;
+                    case 9://引く
+                        y_pull_now = std::chrono::steady_clock::now();
+						sent_y = Y_ARM_PWM;
+						y_pull_time = std::chrono::duration_cast<std::chrono::milliseconds>(y_pull_start - y_pull_now);
+						if (potentiometer < 550 || y_pull_time.count() > 2000)
+						{
+							sent_y = 0;
+							recover_tshirt = false;
 							arm_status = 0;
 						}
 						break;
-					case 4:
-						if(ds3.button(L1) && ds3.press(CROSS)){
-							arm_status = 2;
-						}
-						break;
-
 				}
 
 			}
